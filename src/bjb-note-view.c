@@ -52,11 +52,11 @@ struct _BjbNoteViewPrivate {
   /* UI */
   BijiWebkitEditor *editor;
   ClutterActor      *embed;
-  ClutterActor      *edit_actor;
   BjbEditorToolbar  *edit_bar;
-  ClutterActor      *edit_bar_actor;
   gboolean           edit_bar_is_sticky;
 
+  // these two are the remaining Clutter to get rid of
+  // kill this
   ClutterActor      *last_update;
   ClutterColor      *last_date_bckgrd_clr;
 
@@ -300,10 +300,10 @@ bjb_note_view_constructed (GObject *obj)
 
   gtk_widget_set_hexpand (scroll, TRUE);
   gtk_widget_set_vexpand (scroll, TRUE);
-  
+
   gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scroll),
                                        GTK_SHADOW_IN);
-                                       
+
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scroll),
                                   GTK_POLICY_NEVER,
                                   GTK_POLICY_AUTOMATIC);
@@ -340,10 +340,8 @@ bjb_note_view_constructed (GObject *obj)
       biji_note_obj_set_rgba (priv->note, &color);
   }
 
-  /* Edition Toolbar */
-  priv->edit_bar = bjb_editor_toolbar_new (overlay, self, priv->note);
-  priv->edit_bar_actor = bjb_editor_toolbar_get_actor (priv->edit_bar);
-  clutter_actor_add_child (priv->embed, priv->edit_bar_actor);
+  /* Edition Toolbar for text selection */
+  priv->edit_bar = bjb_editor_toolbar_new (self, priv->note);
 
   /* Last updated row */
   priv->last_update = bjb_note_view_last_updated_actor_new (self);
@@ -374,7 +372,7 @@ static void
 bjb_note_view_class_init (BjbNoteViewClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
-    
+
   object_class->finalize = bjb_note_view_finalize;
   object_class->constructed = bjb_note_view_constructed;
   object_class->get_property = bjb_note_view_get_property;
@@ -389,7 +387,7 @@ bjb_note_view_class_init (BjbNoteViewClass *klass)
                                                  G_PARAM_READWRITE |
                                                  G_PARAM_CONSTRUCT |
                                                  G_PARAM_STATIC_STRINGS);
-                                                 
+
   g_object_class_install_property (object_class,PROP_WINDOW,properties[PROP_WINDOW]);
 
   properties[PROP_PARENT] = g_param_spec_object ("parent",

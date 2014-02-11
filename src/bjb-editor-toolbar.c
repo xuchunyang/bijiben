@@ -26,7 +26,6 @@
 
 #include "config.h"
 
-#include <clutter-gtk/clutter-gtk.h>
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
@@ -54,11 +53,11 @@ struct _BjbEditorToolbarPrivate
   BjbNoteView        *view;
   BijiNoteObj        *note;
 
-  ClutterActor       *actor;
+  //ClutterActor       *actor;
   GtkWidget          *widget;
   GtkAccelGroup      *accel;
-  ClutterActor       *parent_actor;
-  ClutterConstraint  *width_constraint;
+  //ClutterActor       *parent_actor;
+  //ClutterConstraint  *width_constraint;
 
   /* If user rigth-clicks we want to keep the toolbar visible
    * untill user changes his mind */
@@ -84,24 +83,16 @@ static void
 bjb_editor_toolbar_fade_in (BjbEditorToolbar *self)
 {
   BjbEditorToolbarPrivate *priv = self->priv;
-  guint8 opacity;
-
-  opacity = clutter_actor_get_opacity (priv->actor);
-
-  if (opacity != 0)
-    return;
-
-  clutter_actor_set_opacity (priv->actor, 255);
+  gtk_widget_show (priv->widget);
 }
 
 
+/* This is not needed as long as we keep popover modal */
 static void
 bjb_editor_toolbar_fade_out (BjbEditorToolbar *self)
 {
-  BjbEditorToolbarPrivate *priv = self->priv;
-
-  clutter_actor_set_opacity (priv->actor, 0);
 }
+
 
 static void
 bjb_editor_toolbar_init (BjbEditorToolbar *self)
@@ -114,24 +105,21 @@ bjb_editor_toolbar_init (BjbEditorToolbar *self)
   self->priv->accel = gtk_accel_group_new ();
 }
 
+
 static void
 bjb_editor_toolbar_get_property (GObject  *object,
                                  guint     property_id,
                                  GValue   *value,
                                  GParamSpec *pspec)
 {
-  BjbEditorToolbar *self = BJB_EDITOR_TOOLBAR (object);
-
   switch (property_id)
   {
-    case PROP_ACTOR:
-      g_value_set_object (value, self->priv->actor);
-      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
   }
 }
+
 
 static void
 bjb_editor_toolbar_set_property (GObject  *object,
@@ -143,9 +131,6 @@ bjb_editor_toolbar_set_property (GObject  *object,
 
   switch (property_id)
   {
-    case PROP_ACTOR:
-      self->priv->parent_actor = g_value_get_object (value);
-      break;
     case PROP_BJB_NOTE_VIEW:
       self->priv->view = g_value_get_object (value);
       break;
@@ -158,28 +143,30 @@ bjb_editor_toolbar_set_property (GObject  *object,
   }
 }
 
+
+/* TODO identify selected text. if some text is selected,
+ * compute x (left), y (top), width (columns), height (rows) */
 static void
 editor_toolbar_align (BjbEditorToolbar *self, GdkEvent  *event)
 {
   gint                     x_alignment, y_alignment;
-  ClutterConstraint       *constraint;
   BjbEditorToolbarPrivate *priv = self->priv;
+  cairo_rectangle_int_t rect;
 
-  x_alignment = event->button.x + EDITOR_TOOLBAR_X_OFFSET;
-  y_alignment = event->button.y + EDITOR_TOOLBAR_Y_OFFSET;
+  x_alignment = event->button.x;// + EDITOR_TOOLBAR_X_OFFSET;
+  y_alignment = event->button.y;// + EDITOR_TOOLBAR_Y_OFFSET;
 
   if ( x_alignment < 0)
     x_alignment = 0;
 
-  constraint = clutter_bind_constraint_new (priv->parent_actor,
-                                            CLUTTER_BIND_Y,
-                                            y_alignment);
-  clutter_actor_add_constraint (priv->actor, constraint);
 
-  constraint = clutter_bind_constraint_new (priv->parent_actor,
-                                            CLUTTER_BIND_X,
-                                            x_alignment);   
-  clutter_actor_add_constraint (priv->actor, constraint);
+  rect.x = x_alignment;
+  rect.y = y_alignment;
+  rect.width = 1;
+  rect.height = 1;
+
+  g_warning ("align");
+  gtk_popover_set_pointing_to (GTK_POPOVER (priv->widget), &rect);
 }
 
 static void
@@ -331,11 +318,9 @@ bjb_editor_toolbar_constructed (GObject *obj)
   BjbEditorToolbarPrivate   *priv;
   GtkWidget                 *view;
   GtkWidget                 *window;
-  GtkWidget                 *bin;
   GtkWidget                 *image;
   GdkPixbuf                 *pixbuf;
   GtkStyleContext           *context;
-  GdkRGBA                    transparent = {0.0, 0.0, 0.0, 0.0};
   GdkRGBA                    black = {0.0, 0.0, 0.0, 0.6};
   gchar                     *icons_path, *full_path;
   GError                    *error = NULL;
@@ -344,31 +329,20 @@ bjb_editor_toolbar_constructed (GObject *obj)
 
   self = BJB_EDITOR_TOOLBAR (obj);
   priv = self->priv;
-  window = bjb_note_view_get_base_window (priv->view);  
+  window = bjb_note_view_get_base_window (priv->view);
   gtk_window_add_accel_group (GTK_WINDOW (window), priv->accel);
 
-  priv->widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL,0);
+  priv->widget = gtk_popover_new (GTK_WIDGET (priv->view));
   context = gtk_widget_get_style_context (priv->widget);
   gtk_style_context_add_class (context, "osd");
-  gtk_style_context_add_class (context, "toolbar");
 
-  priv->actor = gtk_clutter_actor_new_with_contents (priv->widget);
-  clutter_actor_set_opacity (priv->actor, 0);
-  g_object_set (priv->actor, "show-on-set-parent", FALSE, NULL);
-
-  clutter_actor_set_easing_mode (priv->actor, CLUTTER_EASE_IN_QUAD);
-  clutter_actor_set_easing_duration (priv->actor, 300.0);
-
-  bin = gtk_clutter_actor_get_widget (GTK_CLUTTER_ACTOR (priv->actor));
-  gtk_widget_override_background_color (bin,
+  gtk_widget_override_background_color (priv->widget,
                                         GTK_STATE_FLAG_NORMAL,
-                                        &transparent);
+                                        &black);
 
   priv->box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
-  priv->group = gtk_tool_item_new ();
-  gtk_container_add (GTK_CONTAINER (priv->group), priv->box);
-  gtk_container_add (GTK_CONTAINER (priv->widget), GTK_WIDGET(priv->group));
-  gtk_widget_show_all (GTK_WIDGET (priv->group));
+  gtk_container_add (GTK_CONTAINER (priv->widget), priv->box);
+  gtk_widget_set_opacity (priv->box, 0.1);
 
   /* Cut */
   priv->toolbar_cut = gtk_button_new_with_label (_("Cut"));
@@ -461,8 +435,7 @@ bjb_editor_toolbar_constructed (GObject *obj)
                                         &black);
 
   priv->glued = FALSE;
-  gtk_widget_show_all (GTK_WIDGET(priv->group));
-  clutter_actor_show (priv->actor);
+  gtk_widget_show_all (priv->widget);
 
   /* text selected --> fade in , and not selected --> fade out */
   view = biji_note_obj_get_editor (priv->note);
@@ -477,7 +450,7 @@ bjb_editor_toolbar_constructed (GObject *obj)
                    G_CALLBACK(on_key_released),self);
 
   /* buttons */
-  
+
   g_signal_connect (priv->toolbar_cut,"clicked",
                     G_CALLBACK(on_cut_clicked), self);
 
@@ -520,8 +493,6 @@ bjb_editor_toolbar_finalize (GObject *obj)
   gtk_window_remove_accel_group (GTK_WINDOW (window), priv->accel);
   g_object_unref (priv->accel);
 
-  clutter_actor_destroy (priv->actor);
-
   G_OBJECT_CLASS (bjb_editor_toolbar_parent_class)->finalize (obj);
 }
 
@@ -535,15 +506,7 @@ bjb_editor_toolbar_class_init (BjbEditorToolbarClass *class)
   object_class->constructed = bjb_editor_toolbar_constructed ;
   object_class->finalize = bjb_editor_toolbar_finalize;
 
-  properties[PROP_ACTOR] = g_param_spec_object ("actor",
-                                                "Actor",
-                                                "ParentActor",
-                                                CLUTTER_TYPE_ACTOR,
-                                                G_PARAM_READWRITE |
-                                                G_PARAM_CONSTRUCT |
-                                                G_PARAM_STATIC_STRINGS);
 
-  g_object_class_install_property (object_class,PROP_ACTOR,properties[PROP_ACTOR]);
 
   properties[PROP_BJB_NOTE_VIEW] = g_param_spec_object ("bjbnoteview",
                                                         "bjbnoteview",
@@ -570,19 +533,11 @@ bjb_editor_toolbar_class_init (BjbEditorToolbarClass *class)
 
 
 BjbEditorToolbar *
-bjb_editor_toolbar_new (ClutterActor   *parent_actor,
-                        BjbNoteView    *bjb_note_view,
+bjb_editor_toolbar_new (BjbNoteView    *bjb_note_view,
                         BijiNoteObj    *biji_note_obj)
 {
   return g_object_new (BJB_TYPE_EDITOR_TOOLBAR,
-                       "actor"       , parent_actor,
                        "bjbnoteview" , bjb_note_view,
                        "note"        , biji_note_obj,
                        NULL);
-}
-
-ClutterActor *
-bjb_editor_toolbar_get_actor (BjbEditorToolbar *self)
-{
-  return self->priv->actor;
 }
