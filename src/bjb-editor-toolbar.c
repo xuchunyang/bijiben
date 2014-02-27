@@ -335,6 +335,7 @@ bjb_editor_toolbar_constructed (GObject *obj)
   priv->widget = gtk_popover_new (GTK_WIDGET (priv->view));
   context = gtk_widget_get_style_context (priv->widget);
   gtk_style_context_add_class (context, "osd");
+  gtk_style_context_add_class (context, "linked");
 
   gtk_widget_override_background_color (priv->widget,
                                         GTK_STATE_FLAG_NORMAL,
