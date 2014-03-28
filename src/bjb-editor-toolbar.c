@@ -362,7 +362,7 @@ bjb_editor_toolbar_constructed (GObject *obj)
   /* 'n paste */
   priv->toolbar_paste = gtk_tool_button_new (NULL, _("_Paste"));
   gtk_tool_button_set_use_underline (GTK_TOOL_BUTTON (priv->toolbar_paste), TRUE);
-  gtk_widget_show (priv->toolbar_copy);
+  gtk_widget_show (priv->toolbar_paste);
   gtk_toolbar_insert (GTK_TOOLBAR (priv->box), priv->toolbar_paste, -1);
 
   if (biji_note_obj_can_format (priv->note))
@@ -373,7 +373,7 @@ bjb_editor_toolbar_constructed (GObject *obj)
     gtk_image_set_pixel_size (GTK_IMAGE (image), 24);
     priv->toolbar_bold = gtk_tool_button_new (image, NULL);
     gtk_tool_button_set_use_underline (GTK_TOOL_BUTTON (priv->toolbar_bold), TRUE);
-    gtk_widget_show (priv->toolbar_bold);
+    gtk_widget_show_all (priv->toolbar_bold);
     gtk_toolbar_insert (GTK_TOOLBAR (priv->box), priv->toolbar_bold, -1);
     gtk_widget_set_tooltip_text (GTK_WIDGET (priv->toolbar_bold), _("Bold"));
 
@@ -383,7 +383,7 @@ bjb_editor_toolbar_constructed (GObject *obj)
     gtk_image_set_pixel_size (GTK_IMAGE (image), 24);
     priv->toolbar_italic = gtk_tool_button_new (image, NULL);
     gtk_tool_button_set_use_underline (GTK_TOOL_BUTTON (priv->toolbar_italic), TRUE);
-    gtk_widget_show (priv->toolbar_italic);
+    gtk_widget_show_all (priv->toolbar_italic);
     gtk_toolbar_insert (GTK_TOOLBAR (priv->box), priv->toolbar_italic, -1);
     gtk_widget_set_tooltip_text (GTK_WIDGET (priv->toolbar_italic), _("Italic"));
 
@@ -393,7 +393,7 @@ bjb_editor_toolbar_constructed (GObject *obj)
     gtk_image_set_pixel_size (GTK_IMAGE (image), 24);
     priv->toolbar_strike = gtk_tool_button_new (image, NULL);
     gtk_tool_button_set_use_underline (GTK_TOOL_BUTTON (priv->toolbar_strike), TRUE);
-    gtk_widget_show (priv->toolbar_strike);
+    gtk_widget_show_all (priv->toolbar_strike);
     gtk_toolbar_insert (GTK_TOOLBAR (priv->box), priv->toolbar_strike, -1);
     gtk_widget_set_tooltip_text (GTK_WIDGET (priv->toolbar_strike), _("Strike"));
   }
@@ -420,14 +420,13 @@ bjb_editor_toolbar_constructed (GObject *obj)
   gtk_image_set_pixel_size (GTK_IMAGE (image), 24);
   priv->toolbar_link = gtk_tool_button_new (image, NULL);
   gtk_tool_button_set_use_underline (GTK_TOOL_BUTTON (priv->toolbar_link), TRUE);
-  gtk_widget_show (priv->toolbar_link);
+  gtk_widget_show_all (priv->toolbar_link);
   gtk_toolbar_insert (GTK_TOOLBAR (priv->box), priv->toolbar_link, -1);
   gtk_widget_set_tooltip_text (GTK_WIDGET (priv->toolbar_link),
                                _("Copy selection to a new note"));
 
 
   priv->glued = FALSE;
-  gtk_widget_show_all (priv->widget);
 
   /* text selected --> fade in , and not selected --> fade out */
   view = biji_note_obj_get_editor (priv->note);
