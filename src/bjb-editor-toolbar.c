@@ -84,10 +84,11 @@ bjb_editor_toolbar_fade_in (BjbEditorToolbar *self)
 }
 
 
-/* This is not needed as long as we keep popover modal */
+
 static void
 bjb_editor_toolbar_fade_out (BjbEditorToolbar *self)
 {
+  gtk_widget_hide (self->priv->widget);
 }
 
 
@@ -453,21 +454,21 @@ bjb_editor_toolbar_constructed (GObject *obj)
 
   g_signal_connect (priv->toolbar_bold,"clicked",
                     G_CALLBACK(bold_button_callback), self);
-  gtk_widget_add_accelerator (priv->toolbar_bold,
+/*  gtk_widget_add_accelerator (priv->toolbar_bold,
                               "activate", priv->accel, GDK_KEY_b,
-                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);*/
 
   g_signal_connect (priv->toolbar_italic,"clicked",
                     G_CALLBACK(italic_button_callback), self);
-  gtk_widget_add_accelerator (priv->toolbar_italic,
+/*  gtk_widget_add_accelerator (priv->toolbar_italic,
                               "activate", priv->accel, GDK_KEY_i,
-                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);*/
 
   g_signal_connect (priv->toolbar_strike,"clicked",
                     G_CALLBACK(strike_button_callback), self);
-  gtk_widget_add_accelerator (priv->toolbar_strike,
+/*  gtk_widget_add_accelerator (priv->toolbar_strike,
                               "activate", priv->accel, GDK_KEY_s,
-                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);*/
 
   g_signal_connect (priv->toolbar_link,"clicked",
                     G_CALLBACK(link_callback), self);
