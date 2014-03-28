@@ -163,7 +163,6 @@ editor_toolbar_align (BjbEditorToolbar *self, GdkEvent  *event)
   rect.width = 1;
   rect.height = 1;
 
-  g_warning ("align");
   gtk_popover_set_pointing_to (GTK_POPOVER (priv->widget), &rect);
 }
 
