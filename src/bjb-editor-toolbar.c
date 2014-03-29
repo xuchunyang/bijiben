@@ -62,7 +62,7 @@ struct _BjbEditorToolbarPrivate
 
   /* Do not use toggle buttons. uggly there.
    * Paste : the user might want to paste overriding selected text.
-   * Other : when no selection the user won't try to bold "null".*/
+  // * Other : when no selection the user won't try to bold "null".*/
   GtkToolItem        *group;
   GtkWidget          *box;
   GtkWidget          *toolbar_cut;
@@ -452,21 +452,21 @@ bjb_editor_toolbar_constructed (GObject *obj)
 
   g_signal_connect (priv->toolbar_bold,"clicked",
                     G_CALLBACK(bold_button_callback), self);
-/*  gtk_widget_add_accelerator (priv->toolbar_bold,
-                              "activate", priv->accel, GDK_KEY_b,
-                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);*/
+  gtk_widget_add_accelerator (priv->toolbar_bold,
+                              "clicked", priv->accel, GDK_KEY_b,
+                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
   g_signal_connect (priv->toolbar_italic,"clicked",
                     G_CALLBACK(italic_button_callback), self);
-/*  gtk_widget_add_accelerator (priv->toolbar_italic,
-                              "activate", priv->accel, GDK_KEY_i,
-                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);*/
+  gtk_widget_add_accelerator (priv->toolbar_italic,
+                              "clicked", priv->accel, GDK_KEY_i,
+                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
   g_signal_connect (priv->toolbar_strike,"clicked",
                     G_CALLBACK(strike_button_callback), self);
-/*  gtk_widget_add_accelerator (priv->toolbar_strike,
-                              "activate", priv->accel, GDK_KEY_s,
-                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);*/
+  gtk_widget_add_accelerator (priv->toolbar_strike,
+                              "clicked", priv->accel, GDK_KEY_s,
+                              GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 
   g_signal_connect (priv->toolbar_link,"clicked",
                     G_CALLBACK(link_callback), self);
