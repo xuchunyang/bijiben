@@ -20,7 +20,8 @@
 #ifndef _BIJI_WEBKIT2_EDITOR_H_
 #define _BIJI_WEBKIT2_EDITOR_H_
 
-#include <glib-object.h>
+#include <gtk/gtk.h>
+#include <webkit2/webkit2.h>
 
 G_BEGIN_DECLS
 

@@ -35,7 +35,7 @@ biji_webkit2_editor_constructed (GObject *obj)
   /* TODO: Add private function implementation here */
 }
 
-G_DEFINE_TYPE (BijiWebkit2Editor, biji_webkit2_editor, WEB_TYPE_KIT_WEB_VIEW);
+G_DEFINE_TYPE (BijiWebkit2Editor, biji_webkit2_editor, WEBKIT_TYPE_WEB_VIEW);
 
 static void
 biji_webkit2_editor_init (BijiWebkit2Editor *biji_webkit2_editor)
@@ -67,7 +67,7 @@ biji_webkit2_editor_class_init (BijiWebkit2EditorClass *klass)
 BijiWebkit2Editor *
 biji_webkit2_editor_new (void)
 {
-  /* TODO: Add public function implementation here */
+  return g_object_new (BIJI_TYPE_WEBKIT2_EDITOR, NULL);
 }
 
 void
