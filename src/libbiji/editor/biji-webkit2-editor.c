@@ -29,20 +29,43 @@ struct _BijiWebkit2EditorPrivate
 
 
 
-static void
-biji_webkit2_editor_constructed (GObject *obj)
-{
-  /* TODO: Add private function implementation here */
-}
+
 
 G_DEFINE_TYPE (BijiWebkit2Editor, biji_webkit2_editor, WEBKIT_TYPE_WEB_VIEW);
 
 static void
-biji_webkit2_editor_init (BijiWebkit2Editor *biji_webkit2_editor)
+biji_webkit2_editor_init (BijiWebkit2Editor *self)
 {
-  biji_webkit2_editor->priv = G_TYPE_INSTANCE_GET_PRIVATE (biji_webkit2_editor, BIJI_TYPE_WEBKIT2_EDITOR, BijiWebkit2EditorPrivate);
+  WebKitWebView *view = WEBKIT_WEB_VIEW (self);
+  BijiWebkit2EditorPrivate *priv;
 
-  /* TODO: Add initialization code here */
+  priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT2_EDITOR, BijiWebkit2EditorPrivate);
+  self->priv = priv;
+
+  priv->settings = webkit_settings_new ();
+  // FIXME: can't bind settings to view
+  // priv->settings = webkit_web_view_get_settings (view);
+  // webkit_web_view_set_settings (view, priv->settings);
+}
+
+static void
+biji_webkit2_editor_constructed (GObject *obj)
+{
+  /* TODO: Add private function implementation here */
+  g_message ("%s", __func__);
+
+  BijiWebkit2Editor *self;
+  BijiWebkit2EditorPrivate *priv;
+  WebKitWebView *view;
+
+  self = BIJI_WEBKIT2_EDITOR (obj);
+  view = WEBKIT_WEB_VIEW (self);
+  priv = self->priv;
+
+  webkit_web_view_load_html (view,
+                             "<html><head><style>body {color:blue}</style></head>"
+                             "<body contentEditable='true'>Hello, world!</body></html>",
+                             NULL);
 }
 
 static void
@@ -60,6 +83,7 @@ biji_webkit2_editor_class_init (BijiWebkit2EditorClass *klass)
 
   g_type_class_add_private (klass, sizeof (BijiWebkit2EditorPrivate));
 
+  object_class->constructed = biji_webkit2_editor_constructed;
   object_class->finalize = biji_webkit2_editor_finalize;
 }
 
