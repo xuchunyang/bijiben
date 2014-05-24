@@ -183,6 +183,23 @@ biji_webkit2_editor_paste (BijiWebkit2Editor *self)
 void
 biji_webkit2_editor_set_font (BijiWebkit2Editor *self, gchar *font)
 {
-  /* TODO: Add public function implementation here */
+  BijiWebkit2EditorPrivate *priv = self->priv;
+  PangoFontDescription *font_desc;
+
+  /* parse : but we only parse font properties we'll be able
+   * to transfer to webkit editor
+   * Maybe is there a better way than webkitSettings,
+   * eg applying format to the whole body */
+  font_desc = pango_font_description_from_string (font);
+  const gchar * family = pango_font_description_get_family (font_desc);
+  gint size = pango_font_description_get_size (font_desc) / 1000 ;
+
+  /* Set */
+  g_object_set (G_OBJECT(priv->settings),
+                "default-font-family", family,
+                "default-font-size", size,
+                NULL);
+
+  pango_font_description_free (font_desc);
 }
 
