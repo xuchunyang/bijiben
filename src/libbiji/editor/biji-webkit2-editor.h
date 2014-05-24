@@ -25,6 +25,17 @@
 
 G_BEGIN_DECLS
 
+/* FIXME: use note-obj as private variable */
+typedef enum
+{
+  BIJI_NO_FORMAT,
+  BIJI_BOLD,
+  BIJI_ITALIC,
+  BIJI_STRIKE,
+  BIJI_BULLET_LIST,
+  BIJI_ORDER_LIST
+} BijiEditorFormat;
+
 #define BIJI_TYPE_WEBKIT2_EDITOR             (biji_webkit2_editor_get_type ())
 #define BIJI_WEBKIT2_EDITOR(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), BIJI_TYPE_WEBKIT2_EDITOR, BijiWebkit2Editor))
 #define BIJI_WEBKIT2_EDITOR_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), BIJI_TYPE_WEBKIT2_EDITOR, BijiWebkit2EditorClass))

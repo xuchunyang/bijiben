@@ -104,7 +104,47 @@ biji_webkit2_editor_new (void)
 void
 biji_webkit2_editor_apply_format (BijiWebkit2Editor *self, gint format)
 {
-  /* TODO: Add public function implementation here */
+  BijiWebkit2EditorPrivate *priv = self->priv;
+  gchar *command = NULL;
+  gchar *script = NULL;
+
+  switch (format)
+  {
+    case BIJI_BOLD:
+      command = "bold";
+      break;
+
+    case BIJI_ITALIC:
+      command = "italic";
+      break;
+
+    case BIJI_STRIKE:
+      command = "strikethrough";
+      break;
+
+    case BIJI_BULLET_LIST:
+      g_warning ("%s : TODO bullet list", __func__);
+      break;
+
+    case BIJI_ORDER_LIST:
+      g_warning ("%s : TODO order list", __func__);
+      break;
+
+    default:
+      g_warning ("%s : Invalid format", __func__);
+    }
+
+  if (command != NULL)
+  {
+    script = g_strdup_printf ("document.execCommand('%s', false, null)", command);
+    webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
+                                    script,
+                                    NULL,
+                                    NULL,
+                                    NULL);
+  }
+
+  g_free(script);
 }
 
 gboolean
@@ -122,19 +162,22 @@ biji_webkit2_editor_get_selection (BijiWebkit2Editor *self)
 void
 biji_webkit2_editor_cut (BijiWebkit2Editor *self)
 {
-  /* TODO: Add public function implementation here */
+  webkit_web_view_execute_editing_command (WEBKIT_WEB_VIEW (self),
+                                           WEBKIT_EDITING_COMMAND_CUT);
 }
 
 void
 biji_webkit2_editor_copy (BijiWebkit2Editor *self)
 {
-  /* TODO: Add public function implementation here */
+  webkit_web_view_execute_editing_command (WEBKIT_WEB_VIEW (self),
+                                           WEBKIT_EDITING_COMMAND_COPY);
 }
 
 void
 biji_webkit2_editor_paste (BijiWebkit2Editor *self)
 {
-  /* TODO: Add public function implementation here */
+  webkit_web_view_execute_editing_command (WEBKIT_WEB_VIEW (self),
+                                           WEBKIT_EDITING_COMMAND_PASTE);
 }
 
 void
