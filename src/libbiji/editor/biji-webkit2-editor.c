@@ -21,6 +21,9 @@
 
 struct _BijiWebkit2EditorPrivate
 {
+  /* TODO: Add BijiNoteObj, EEditorSelection and spell_check */
+  gchar *note;
+
   gulong content_changed;
   gulong color_changed;
   WebKitSettings* settings;
@@ -42,17 +45,15 @@ biji_webkit2_editor_init (BijiWebkit2Editor *self)
   priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT2_EDITOR, BijiWebkit2EditorPrivate);
   self->priv = priv;
 
+  priv->note = "Note content";
   priv->settings = webkit_settings_new ();
-  // FIXME: can't bind settings to view
-  // priv->settings = webkit_web_view_get_settings (view);
-  // webkit_web_view_set_settings (view, priv->settings);
+
 }
 
 static void
 biji_webkit2_editor_constructed (GObject *obj)
 {
-  /* TODO: Add private function implementation here */
-  g_message ("%s", __func__);
+  G_OBJECT_CLASS (biji_webkit2_editor_parent_class)->constructed (obj);
 
   BijiWebkit2Editor *self;
   BijiWebkit2EditorPrivate *priv;
@@ -62,16 +63,22 @@ biji_webkit2_editor_constructed (GObject *obj)
   view = WEBKIT_WEB_VIEW (self);
   priv = self->priv;
 
+  /* Settings */
+  webkit_web_view_set_settings (view, priv->settings);
+
   webkit_web_view_load_html (view,
                              "<html><head><style>body {color:blue}</style></head>"
                              "<body contentEditable='true'>Hello, world!</body></html>",
                              NULL);
+
+
 }
 
 static void
 biji_webkit2_editor_finalize (GObject *object)
 {
-  /* TODO: Add deinitalization code here */
+  BijiWebkit2Editor *self = BIJI_WEBKIT2_EDITOR (object);
+  BijiWebkit2EditorPrivate *priv = self->priv;
 
   G_OBJECT_CLASS (biji_webkit2_editor_parent_class)->finalize (object);
 }
