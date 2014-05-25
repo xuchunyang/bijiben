@@ -65,6 +65,9 @@ GType biji_webkit2_editor_get_type (void) G_GNUC_CONST;
 BijiWebkit2Editor * biji_webkit2_editor_new (void); // FIXME: add argument
 
 void biji_webkit2_editor_apply_format (BijiWebkit2Editor *self, gint format);
+
+void biji_webkit2_editor_apply_format_new (BijiWebkit2Editor *self, gchar *format);
+
 gboolean biji_webkit2_editor_has_selection (BijiWebkit2Editor *self);
 gchar * biji_webkit2_editor_get_selection (BijiWebkit2Editor *self);
 void biji_webkit2_editor_cut (BijiWebkit2Editor *self);

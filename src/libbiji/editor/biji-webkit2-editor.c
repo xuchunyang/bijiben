@@ -58,6 +58,7 @@ biji_webkit2_editor_constructed (GObject *obj)
   BijiWebkit2Editor *self;
   BijiWebkit2EditorPrivate *priv;
   WebKitWebView *view;
+  gchar *html_path;
 
   self = BIJI_WEBKIT2_EDITOR (obj);
   view = WEBKIT_WEB_VIEW (self);
@@ -66,10 +67,10 @@ biji_webkit2_editor_constructed (GObject *obj)
   /* Settings */
   webkit_web_view_set_settings (view, priv->settings);
 
-  webkit_web_view_load_html (view,
-                             "<html><head><style>body {color:blue}</style></head>"
-                             "<body contentEditable='true'>Hello, world!</body></html>",
-                             NULL);
+  /* FIXME: use g_build_filename, see css_path in biji-webkit-editor.c */
+  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/Default.html", NULL, NULL);
+  webkit_web_view_load_uri (view, html_path);
+  g_free (html_path);
 }
 
 static void
@@ -97,6 +98,20 @@ BijiWebkit2Editor *
 biji_webkit2_editor_new (void)
 {
   return g_object_new (BIJI_TYPE_WEBKIT2_EDITOR, NULL);
+}
+
+void
+biji_webkit2_editor_apply_format_new (BijiWebkit2Editor *self, gchar *format)
+{
+  gchar *script;
+
+  script = g_strdup_printf ("document.execCommand('%s', false, false)", format);
+  webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
+                                  script,
+                                  NULL,
+                                  NULL,
+                                  NULL);
+  g_free (script);
 }
 
 void
@@ -192,33 +207,11 @@ web_view_javascript_finished (GObject      *object,
 static void
 web_view_get_selected_html (WebKitWebView *web_view)
 {
-  gchar *script;
-  script = g_strdup_printf ("function getSelectionHtml() {"
-                            "    var html = '';"
-                            "    if (typeof window.getSelection != 'undefined') {"
-                            "        var sel = window.getSelection();"
-                            "        if (sel.rangeCount) {"
-                            "            var container = document.createElement('div');"
-                            "            for (var i = 0, len = sel.rangeCount; i < len; ++i) {"
-                            "                container.appendChild(sel.getRangeAt(i).cloneContents());"
-                            "            }"
-                            "            html = container.innerHTML;"
-                            "        }"
-                            "    } else if (typeof document.selection != 'undefined') {"
-                            "        if (document.selection.type == 'Text') {"
-                            "            html = document.selection.createRange().htmlText;"
-                            "        }"
-                            "    }"
-                            "    return html;"
-                            "}"
-                            "getSelectionHtml()");
   webkit_web_view_run_javascript (web_view,
-                                  script,
+                                  "getSelectionHtml()",
                                   NULL,
                                   web_view_javascript_finished,
                                   NULL);
-
-  g_free (script);
 }
 
 gboolean
