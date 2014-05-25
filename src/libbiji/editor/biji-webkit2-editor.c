@@ -217,7 +217,7 @@ web_view_get_selected_html (WebKitWebView *web_view)
 gboolean
 biji_webkit2_editor_has_selection (BijiWebkit2Editor *self)
 {
-  if (biji_webkit2_editor_get_selection (self) == "")
+  if (g_strcmp0 (biji_webkit2_editor_get_selection (self), "") == 0)
     return false;
   else
     return true;
