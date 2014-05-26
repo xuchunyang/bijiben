@@ -68,7 +68,7 @@ biji_webkit2_editor_constructed (GObject *obj)
   webkit_web_view_set_settings (view, priv->settings);
 
   /* FIXME: use g_build_filename, see css_path in biji-webkit-editor.c */
-  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/Default.html", NULL, NULL);
+  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/popline/index.html", NULL, NULL);
   webkit_web_view_load_uri (view, html_path);
   g_free (html_path);
 }

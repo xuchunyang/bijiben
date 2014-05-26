@@ -1,3 +1,6 @@
 [submodule "libgd"]
 	path = libgd
 	url = git://git.gnome.org/libgd
+[submodule "src/libbiji/editor/popline"]
+	path = src/libbiji/editor/popline
+	url = https://github.com/kenshin54/popline
