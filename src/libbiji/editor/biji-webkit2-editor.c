@@ -22,6 +22,13 @@
 
 #include "biji-webkit2-editor.h"
 
+/* Prop */
+enum {
+  PROP_0,
+  PROP_NOTE,
+  NUM_PROP
+};
+
 /* Signals */
 enum {
   EDITOR_CLOSED,
@@ -30,14 +37,18 @@ enum {
 
 static guint biji_editor2_signals [EDITOR_SIGNALS] = { 0 };
 
+static GParamSpec *properties[NUM_PROP] = { NULL, };
+
 struct _BijiWebkit2EditorPrivate
 {
-  /* TODO: Add BijiNoteObj, EEditorSelection and spell_check */
-  gchar *note;
-
+  /* FIXME: howto fix compile & build error */
+  BijiNoteObj *note;
+  /* FIXME: why not signal and how it works */
   gulong content_changed;
   gulong color_changed;
+
   WebKitSettings* settings;
+  /*TODO: selection and spell check (spell check not easy in HTML5 editiable mode) */
 };
 
 
@@ -52,7 +63,6 @@ biji_webkit2_editor_init (BijiWebkit2Editor *self)
   priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT2_EDITOR, BijiWebkit2EditorPrivate);
   self->priv = priv;
 
-  priv->note = "Note content";
   priv->settings = webkit_settings_new ();
 
 }
@@ -90,10 +100,55 @@ biji_webkit2_editor_finalize (GObject *object)
 }
 
 static void
+biji_webkit2_editor_get_property (GObject  *object,
+                                  guint     property_id,
+                                  GValue   *value,
+                                  GParamSpec *pspec)
+{
+  BijiWebkitEditor *self = BIJI_WEBKIT2_EDITOR (object);
+
+  switch (property_id)
+    {
+    case PROP_NOTE:
+      g_value_set_object (value, self->priv->note);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    }
+}
+
+static void
+biji_webkit2_editor_set_property (GObject  *object,
+                                  guint     property_id,
+                                  const GValue *value,
+                                  GParamSpec *pspec)
+{
+  BijiWebkitEditor *self = BIJI_WEBKIT2_EDITOR (object);
+
+  switch (property_id)
+    {
+    case PROP_NOTE:
+      self->priv->note = g_value_get_object (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    }
+}
+
+static void
 biji_webkit2_editor_class_init (BijiWebkit2EditorClass *klass)
 {
   GObjectClass* object_class = G_OBJECT_CLASS (klass);
 
+  properties[PROP_NOTE] = g_param_spec_object ("note",
+                                               "Note",
+                                               "Biji Note Obj",
+                                                BIJI_TYPE_NOTE_OBJ,
+                                                G_PARAM_READWRITE  |
+                                                G_PARAM_CONSTRUCT |
+                                                G_PARAM_STATIC_STRINGS);
+  g_object_class_install_property (object_class,PROP_NOTE,properties[PROP_NOTE]);
+  
   biji_editor2_signals[EDITOR_CLOSED] = g_signal_new ("closed",
                                                       G_OBJECT_CLASS_TYPE (klass),
                                                       G_SIGNAL_RUN_FIRST,
@@ -108,13 +163,17 @@ biji_webkit2_editor_class_init (BijiWebkit2EditorClass *klass)
 
   object_class->constructed = biji_webkit2_editor_constructed;
   object_class->finalize = biji_webkit2_editor_finalize;
+  object_class->get_property = biji_webkit_editor_get_property;
+  object_class->set_property = biji_webkit_editor_set_property;
 }
 
 
 BijiWebkit2Editor *
-biji_webkit2_editor_new (void)
+biji_webkit2_editor_new (BijiNoteObj *note)
 {
-  return g_object_new (BIJI_TYPE_WEBKIT2_EDITOR, NULL);
+  return g_object_new (BIJI_TYPE_WEBKIT2_EDITOR,
+                       "note", note,
+                       NULL);
 }
 
 void
