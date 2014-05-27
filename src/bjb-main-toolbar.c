@@ -769,21 +769,8 @@ bjb_note_menu_new (BjbMainToolbar *self)
   }
 
   /* Undo Redo separator */
-  item = gtk_menu_item_new_with_label (_("Undo"));
-  gtk_menu_shell_append (GTK_MENU_SHELL (result), item);
-  g_signal_connect_swapped (item, "activate",
-                            G_CALLBACK (webkit_web_view_undo), editor);
-  gtk_widget_add_accelerator (item, "activate", priv->accel, GDK_KEY_u,
-                             GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-
-
-  item = gtk_menu_item_new_with_label (_("Redo"));
-  gtk_menu_shell_append (GTK_MENU_SHELL (result), item);
-  g_signal_connect_swapped (item, "activate",
-                            G_CALLBACK (webkit_web_view_redo), editor);
-  gtk_widget_add_accelerator (item, "activate", priv->accel, GDK_KEY_r,
-                             GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-
+  /* FIXME:  */
+  
   item = gtk_separator_menu_item_new ();
   gtk_menu_shell_append (GTK_MENU_SHELL (result), item);
 
