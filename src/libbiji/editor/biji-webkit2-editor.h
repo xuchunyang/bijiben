@@ -1,4 +1,3 @@
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 4 -*-  */
 /*
  * biji-webkit2-editor.h
  * Copyright (C) 2014 Chunyang Xu <xuchunyang56@gmail.com>
@@ -23,18 +22,9 @@
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
-G_BEGIN_DECLS
+#include "../biji-note-obj.h"
 
-/* FIXME: use note-obj as private variable */
-typedef enum
-{
-  BIJI_NO_FORMAT,
-  BIJI_BOLD,
-  BIJI_ITALIC,
-  BIJI_STRIKE,
-  BIJI_BULLET_LIST,
-  BIJI_ORDER_LIST
-} BijiEditorFormat;
+G_BEGIN_DECLS
 
 #define BIJI_TYPE_WEBKIT2_EDITOR             (biji_webkit2_editor_get_type ())
 #define BIJI_WEBKIT2_EDITOR(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), BIJI_TYPE_WEBKIT2_EDITOR, BijiWebkit2Editor))
@@ -56,7 +46,6 @@ struct _BijiWebkit2EditorClass
 struct _BijiWebkit2Editor
 {
   WebKitWebView parent_instance;
-
   BijiWebkit2EditorPrivate *priv;
 };
 

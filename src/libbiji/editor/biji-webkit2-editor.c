@@ -1,4 +1,3 @@
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 2; tab-width: 4 -*-  */
 /*
  * biji-webkit2-editor.c
  * Copyright (C) 2014 Chunyang Xu <xuchunyang56@gmail.com>
@@ -17,8 +16,12 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <libxml/xmlwriter.h>   /* FIXME: not sure if necessary */
 #include <JavaScriptCore/JSStringRef.h>
 #include <JavaScriptCore/JSValueRef.h>
+
+#include "../biji-string.h"
+#include "../biji-manager.h"
 
 #include "biji-webkit2-editor.h"
 
@@ -44,15 +47,30 @@ struct _BijiWebkit2EditorPrivate
   /* FIXME: howto fix compile & build error */
   BijiNoteObj *note;
   /* FIXME: why not signal and how it works */
-  gulong content_changed;
   gulong color_changed;
-
+  /* TODO: add handle content changed */
+  
   WebKitSettings* settings;
   /*TODO: selection and spell check (spell check not easy in HTML5 editiable mode) */
 };
 
-
 G_DEFINE_TYPE (BijiWebkit2Editor, biji_webkit2_editor, WEBKIT_TYPE_WEB_VIEW);
+
+static void
+set_editor_color (GtkWidget *w, GdkRGBA *col)
+{
+  /* FIXME: html/css  or GtkWidget background */
+  gtk_widget_override_background_color (w, GTK_STATE_FLAG_NORMAL, col);
+}
+
+static void
+on_note_color_changed (BijiNoteObj *note, BijiWebkitEditor *self)
+{
+  GdkRGBA color;
+
+  if (biji_note_obj_get_rgba(note,&color))
+    set_editor_color (GTK_WIDGET (self), &color);
+}
 
 static void
 biji_webkit2_editor_init (BijiWebkit2Editor *self)
@@ -68,6 +86,15 @@ biji_webkit2_editor_init (BijiWebkit2Editor *self)
 }
 
 static void
+biji_webkit2_editor_finalize (GObject *object)
+{
+  BijiWebkit2Editor *self = BIJI_WEBKIT2_EDITOR (object);
+  BijiWebkit2EditorPrivate *priv = self->priv;
+
+  G_OBJECT_CLASS (biji_webkit2_editor_parent_class)->finalize (object);
+}
+
+static void
 biji_webkit2_editor_constructed (GObject *obj)
 {
   G_OBJECT_CLASS (biji_webkit2_editor_parent_class)->constructed (obj);
@@ -76,10 +103,16 @@ biji_webkit2_editor_constructed (GObject *obj)
   BijiWebkit2EditorPrivate *priv;
   WebKitWebView *view;
   gchar *html_path;
-
+  GdkRGBA color;
+    
   self = BIJI_WEBKIT2_EDITOR (obj);
   view = WEBKIT_WEB_VIEW (self);
   priv = self->priv;
+
+  /* Do not segfault at finalize
+   * if the note died */
+  g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
+
 
   /* Settings */
   webkit_web_view_set_settings (view, priv->settings);
@@ -88,15 +121,20 @@ biji_webkit2_editor_constructed (GObject *obj)
   html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/popline/index.html", NULL, NULL);
   webkit_web_view_load_uri (view, html_path);
   g_free (html_path);
-}
 
-static void
-biji_webkit2_editor_finalize (GObject *object)
-{
-  BijiWebkit2Editor *self = BIJI_WEBKIT2_EDITOR (object);
-  BijiWebkit2EditorPrivate *priv = self->priv;
+  /* Apply color */
+  if (biji_note_obj_get_rgba (priv->note,&color))
+    set_editor_color (GTK_WIDGET (self), &color);
 
-  G_OBJECT_CLASS (biji_webkit2_editor_parent_class)->finalize (object);
+  priv->color_changed = g_signal_connect (priv->note,
+                                          "color-changed",
+                                          G_CALLBACK (on_note_color_changed),
+                                          self);
+
+  /* TODO: "Save" in webkit1:
+   * update title & save note's meta (mtime, content, etc)
+   * but the content changed signal in webkit1 has been remove now
+   */
 }
 
 static void
