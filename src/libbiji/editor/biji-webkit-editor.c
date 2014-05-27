@@ -1,6 +1,7 @@
-/* biji-webkit-editor.c
- * Copyright (C) Pierre-Yves LUYTEN 2012 <py@luyten.fr>
- * 
+/*
+ * biji-webkit-editor.c
+ * Copyright (C) 2014 Chunyang Xu <xuchunyang56@gmail.com>
+ *
  * bijiben is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 3 of the License, or
@@ -15,13 +16,14 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libxml/xmlwriter.h>
+#include <libxml/xmlwriter.h>   /* FIXME: not sure if necessary */
+#include <JavaScriptCore/JSStringRef.h>
+#include <JavaScriptCore/JSValueRef.h>
 
-#include "config.h"
 #include "../biji-string.h"
 #include "../biji-manager.h"
+
 #include "biji-webkit-editor.h"
-#include "biji-editor-selection.h"
 
 /* Prop */
 enum {
@@ -36,137 +38,334 @@ enum {
   EDITOR_SIGNALS
 };
 
-static guint biji_editor_signals [EDITOR_SIGNALS] = { 0 };
+static guint biji_editor2_signals [EDITOR_SIGNALS] = { 0 };
 
 static GParamSpec *properties[NUM_PROP] = { NULL, };
 
 struct _BijiWebkitEditorPrivate
 {
+  /* FIXME: howto fix compile & build error */
   BijiNoteObj *note;
-  gulong content_changed;
+  /* FIXME: why not signal and how it works */
   gulong color_changed;
-
-  WebKitWebSettings *settings;
-  EEditorSelection *sel;
-  GObject *spell_check;
+  /* TODO: add handle content changed */
+  
+  WebKitSettings* settings;
+  /*TODO: selection and spell check (spell check not easy in HTML5 editiable mode) */
 };
 
 G_DEFINE_TYPE (BijiWebkitEditor, biji_webkit_editor, WEBKIT_TYPE_WEB_VIEW);
 
-gboolean
-biji_webkit_editor_has_selection (BijiWebkitEditor *self)
+static void
+set_editor_color (GtkWidget *w, GdkRGBA *col)
 {
+  /* FIXME: html/css  or GtkWidget background */
+  gtk_widget_override_background_color (w, GTK_STATE_FLAG_NORMAL, col);
+}
+
+static void
+on_note_color_changed (BijiNoteObj *note, BijiWebkitEditor *self)
+{
+  GdkRGBA color;
+
+  if (biji_note_obj_get_rgba(note,&color))
+    set_editor_color (GTK_WIDGET (self), &color);
+}
+
+static void
+biji_webkit_editor_init (BijiWebkitEditor *self)
+{
+  WebKitWebView *view = WEBKIT_WEB_VIEW (self);
+  BijiWebkitEditorPrivate *priv;
+
+  priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT_EDITOR, BijiWebkitEditorPrivate);
+  self->priv = priv;
+
+  priv->settings = webkit_settings_new ();
+}
+
+static void
+biji_webkit_editor_finalize (GObject *object)
+{
+  BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (object);
   BijiWebkitEditorPrivate *priv = self->priv;
-  const gchar *text = NULL;
-  gboolean retval = FALSE;
 
-  if (e_editor_selection_has_text (priv->sel))
-  {
-    text = e_editor_selection_get_string (priv->sel);
-
-    if ( g_strcmp0 (text, "") != 0)
-      retval = TRUE;
-  }
-
-  return retval;
-}
-
-gchar *
-biji_webkit_editor_get_selection (BijiWebkitEditor *self)
-{
-  gchar *retval = NULL;
-
-  if (e_editor_selection_has_text (self->priv->sel))
-    retval = (gchar*) e_editor_selection_get_string (self->priv->sel);
-
-  return retval;
-}
-
-typedef gboolean GetFormatFunc (EEditorSelection*);
-typedef void     SetFormatFunc (EEditorSelection*, gboolean);
-
-static void
-biji_toggle_format (EEditorSelection *sel,
-                    GetFormatFunc get_format,
-                    SetFormatFunc set_format)
-{
-  set_format (sel, !get_format (sel));
+  G_OBJECT_CLASS (biji_webkit_editor_parent_class)->finalize (object);
 }
 
 static void
-biji_toggle_block_format (EEditorSelection *sel,
-                          EEditorSelectionBlockFormat format)
+biji_webkit_editor_constructed (GObject *obj)
 {
-  if (e_editor_selection_get_block_format(sel) == format)
-    e_editor_selection_set_block_format (sel,
-                                  E_EDITOR_SELECTION_BLOCK_FORMAT_NONE);
+  G_OBJECT_CLASS (biji_webkit_editor_parent_class)->constructed (obj);
 
-  else
-    e_editor_selection_set_block_format (sel, format);
+  BijiWebkitEditor *self;
+  BijiWebkitEditorPrivate *priv;
+  WebKitWebView *view;
+  gchar *html_path;
+  GdkRGBA color;
+    
+  self = BIJI_WEBKIT_EDITOR (obj);
+  view = WEBKIT_WEB_VIEW (self);
+  priv = self->priv;
+  
+
+  /* FIXME: below? */
+  /* Do not segfault at finalize
+   * if the note died */
+  /* g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note); */
+
+
+  /* Settings */
+  /* FIXME: critical here */
+  webkit_web_view_set_settings (view, priv->settings);
+
+  /* FIXME: use g_build_filename, see css_path in biji-webkit-editor.c */
+  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/popline/index.html", NULL, NULL);
+  webkit_web_view_load_uri (view, html_path);
+  g_free (html_path);
+
+  /* Apply color */
+  if (biji_note_obj_get_rgba (priv->note,&color))
+    set_editor_color (GTK_WIDGET (self), &color);
+
+  priv->color_changed = g_signal_connect (priv->note,
+                                          "color-changed",
+                                          G_CALLBACK (on_note_color_changed),
+                                          self);
+
+  /* TODO: "Save" in webkit1:
+   * update title & save note's meta (mtime, content, etc)
+   * but the content changed signal in webkit1 has been remove now
+   */
+}
+
+static void
+biji_webkit_editor_get_property (GObject  *object,
+                                  guint     property_id,
+                                  GValue   *value,
+                                  GParamSpec *pspec)
+{
+  BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (object);
+
+  switch (property_id)
+    {
+    case PROP_NOTE:
+      g_value_set_object (value, self->priv->note);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    }
+}
+
+static void
+biji_webkit_editor_set_property (GObject  *object,
+                                 guint     property_id,
+                                 const GValue *value,
+                                 GParamSpec *pspec)
+{
+  BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (object);
+
+  switch (property_id)
+    {
+    case PROP_NOTE:
+      self->priv->note = g_value_get_object (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+    }
+}
+
+static void
+biji_webkit_editor_class_init (BijiWebkitEditorClass *klass)
+{
+  GObjectClass* object_class = G_OBJECT_CLASS (klass);
+
+  object_class->constructed = biji_webkit_editor_constructed;
+  object_class->finalize = biji_webkit_editor_finalize;
+  object_class->get_property = biji_webkit_editor_get_property;
+  object_class->set_property = biji_webkit_editor_set_property;
+  
+  properties[PROP_NOTE] = g_param_spec_object ("note",
+                                               "Note",
+                                               "Biji Note Obj",
+                                                BIJI_TYPE_NOTE_OBJ,
+                                                G_PARAM_READWRITE  |
+                                                G_PARAM_CONSTRUCT |
+                                                G_PARAM_STATIC_STRINGS);
+  g_object_class_install_property (object_class,PROP_NOTE,properties[PROP_NOTE]);
+  
+  biji_editor2_signals[EDITOR_CLOSED] = g_signal_new ("closed",
+                                                      G_OBJECT_CLASS_TYPE (klass),
+                                                      G_SIGNAL_RUN_FIRST,
+                                                      0,
+                                                      NULL,
+                                                      NULL,
+                                                      g_cclosure_marshal_VOID__VOID,
+                                                      G_TYPE_NONE,
+                                                      0);
+  
+  g_type_class_add_private (klass, sizeof (BijiWebkitEditorPrivate));
+
+}
+
+
+BijiWebkitEditor *
+biji_webkit_editor_new (BijiNoteObj *note)
+{
+  return g_object_new (BIJI_TYPE_WEBKIT_EDITOR,
+                       "note", note,
+                       NULL);
+}
+
+void
+biji_webkit_editor_apply_format_new (BijiWebkitEditor *self, gchar *format)
+{
+  gchar *script;
+
+  script = g_strdup_printf ("document.execCommand('%s', false, false)", format);
+  webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
+                                  script,
+                                  NULL,
+                                  NULL,
+                                  NULL);
+  g_free (script);
 }
 
 void
 biji_webkit_editor_apply_format (BijiWebkitEditor *self, gint format)
 {
   BijiWebkitEditorPrivate *priv = self->priv;
+  gchar *command = NULL;
+  gchar *script = NULL;
 
-  if ( e_editor_selection_has_text (priv->sel))
+  switch (format)
   {
-    switch (format)
-    {
-      case BIJI_BOLD:
-        biji_toggle_format (priv->sel, e_editor_selection_get_bold,
-                                       e_editor_selection_set_bold);
-        break;
+    case BIJI_BOLD:
+      command = "bold";
+      break;
 
-      case BIJI_ITALIC:
-        biji_toggle_format (priv->sel, e_editor_selection_get_italic,
-                                       e_editor_selection_set_italic);
-        break;
+    case BIJI_ITALIC:
+      command = "italic";
+      break;
 
-      case BIJI_STRIKE:
-        biji_toggle_format (priv->sel, e_editor_selection_get_strike_through,
-                                       e_editor_selection_set_strike_through);
-        break;
+    case BIJI_STRIKE:
+      command = "strikethrough";
+      break;
 
-      case BIJI_BULLET_LIST:
-        biji_toggle_block_format (priv->sel,
-                        E_EDITOR_SELECTION_BLOCK_FORMAT_UNORDERED_LIST);
-        break;
+    case BIJI_BULLET_LIST:
+      g_warning ("%s : TODO bullet list", __func__);
+      break;
 
-      case BIJI_ORDER_LIST:
-        biji_toggle_block_format (priv->sel,
-                        E_EDITOR_SELECTION_BLOCK_FORMAT_ORDERED_LIST);
-        break;
+    case BIJI_ORDER_LIST:
+      g_warning ("%s : TODO order list", __func__);
+      break;
 
-      default:
-        g_warning ("biji_webkit_editor_apply_format : Invalid format");
+    default:
+      g_warning ("%s : Invalid format", __func__);
     }
+
+  if (command != NULL)
+  {
+    script = g_strdup_printf ("document.execCommand('%s', false, null)", command);
+    webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
+                                    script,
+                                    NULL,
+                                    NULL,
+                                    NULL);
   }
+
+  g_free(script);
+}
+
+static void
+web_view_javascript_finished (GObject      *object,
+                              GAsyncResult *result,
+                              gpointer      user_data)
+{
+  WebKitJavascriptResult *js_result;
+  JSValueRef              value;
+  JSGlobalContextRef      context;
+  GError                 *error = NULL;
+
+  js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object),
+                                                     result,
+                                                     &error);
+  if (!js_result)
+    {
+      g_warning ("Error running javascript: %s", error->message);
+      g_error_free (error);
+      return;
+    }
+
+  context = webkit_javascript_result_get_global_context (js_result);
+  value = webkit_javascript_result_get_value (js_result);
+  if (JSValueIsString (context, value))
+    {
+      JSStringRef js_str_value;
+      gchar      *str_value;
+      gsize       str_length;
+
+      js_str_value = JSValueToStringCopy (context, value, NULL);
+      str_length = JSStringGetMaximumUTF8CStringSize (js_str_value);
+      str_value = (gchar *)g_malloc (str_length);
+      JSStringGetUTF8CString (js_str_value, str_value, str_length);
+      JSStringRelease (js_str_value);
+      g_print ("Script result: %s\n", str_value); /* FIXME: return str_value */
+      g_free (str_value);
+    }
+  else
+    {
+      g_warning ("Error running javascript: unexpected return value");
+    }
+
+  webkit_javascript_result_unref (js_result);
+}
+
+static void
+web_view_get_selected_html (WebKitWebView *web_view)
+{
+  webkit_web_view_run_javascript (web_view,
+                                  "getSelectionHtml()",
+                                  NULL,
+                                  web_view_javascript_finished,
+                                  NULL);
+}
+
+gboolean
+biji_webkit_editor_has_selection (BijiWebkitEditor *self)
+{
+  /* TODO */
+  g_message ("TODO: %s", __func__);
+  return false;
+}
+
+gchar *
+biji_webkit_editor_get_selection (BijiWebkitEditor *self)
+{
+  /* TODO */
+  g_message ("TODO: %s", __func__);
+  return NULL;
 }
 
 void
 biji_webkit_editor_cut (BijiWebkitEditor *self)
 {
-  webkit_web_view_cut_clipboard (WEBKIT_WEB_VIEW (self));
+  webkit_web_view_execute_editing_command (WEBKIT_WEB_VIEW (self),
+                                           WEBKIT_EDITING_COMMAND_CUT);
 }
 
 void
 biji_webkit_editor_copy (BijiWebkitEditor *self)
 {
-  webkit_web_view_copy_clipboard (WEBKIT_WEB_VIEW (self));
+  webkit_web_view_execute_editing_command (WEBKIT_WEB_VIEW (self),
+                                           WEBKIT_EDITING_COMMAND_COPY);
 }
 
 void
 biji_webkit_editor_paste (BijiWebkitEditor *self)
 {
-  webkit_web_view_paste_clipboard (WEBKIT_WEB_VIEW (self));
-}
-
-static void
-set_editor_color (GtkWidget *w, GdkRGBA *col)
-{
-  gtk_widget_override_background_color (w, GTK_STATE_FLAG_NORMAL, col);
+  webkit_web_view_execute_editing_command (WEBKIT_WEB_VIEW (self),
+                                           WEBKIT_EDITING_COMMAND_PASTE);
 }
 
 void
@@ -192,268 +391,3 @@ biji_webkit_editor_set_font (BijiWebkitEditor *self, gchar *font)
   pango_font_description_free (font_desc);
 }
 
-
-static void
-biji_webkit_editor_init (BijiWebkitEditor *self)
-{
-  WebKitWebView *view = WEBKIT_WEB_VIEW (self);
-  BijiWebkitEditorPrivate *priv;  
-  gchar *css_path;
-
-  priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT_EDITOR, BijiWebkitEditorPrivate);
-  self->priv = priv;
-
-  priv->sel = e_editor_selection_new (view);
-
-  /* Settings */
-  webkit_web_view_set_editable (view, TRUE);
-  webkit_web_view_set_transparent (view, TRUE);
-  priv->settings = webkit_web_view_get_settings (view);
-
-  css_path = g_build_filename ("file://",
-                               DATADIR, "bijiben",
-                               "Default.css",NULL);
-
-  g_object_set (G_OBJECT(priv->settings),
-                "enable-plugins", FALSE,
-                "enable-file-access-from-file-uris", TRUE,
-                "user-stylesheet-uri", css_path,
-                "enable-spell-checking", TRUE,
-                "tab-key-cycles-through-elements", FALSE,
-                NULL);
-
-  g_free (css_path);
-
-  priv->spell_check = webkit_get_text_checker ();
-}
-
-static void
-biji_webkit_editor_finalize (GObject *object)
-{
-  BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (object);
-  BijiWebkitEditorPrivate *priv = self->priv;
-
-  /* priv->spell_check is ref by webkit. probably not to unref */
-  g_object_unref (priv->sel);
-
-
-  if (priv->note != NULL)
-    g_signal_handler_disconnect (priv->note, priv->color_changed);
-
-
-  G_OBJECT_CLASS (biji_webkit_editor_parent_class)->finalize (object);
-}
-
-static void
-on_content_changed (WebKitWebView *view)
-{
-  BijiWebkitEditor     *self = BIJI_WEBKIT_EDITOR (view);
-  BijiNoteObj *note = self->priv->note;
-  WebKitDOMDocument    *dom;
-  WebKitDOMHTMLElement *elem;
-  gchar                *html, *text;
-  gchar                **rows;
-
-  /* First html serializing */
-  dom = webkit_web_view_get_dom_document (view);
-  elem = WEBKIT_DOM_HTML_ELEMENT (webkit_dom_document_get_document_element (dom));
-  html = webkit_dom_html_element_get_outer_html (elem);
-  text = webkit_dom_html_element_get_inner_text (elem);
-
-  biji_note_obj_set_html (note, html);
-  biji_note_obj_set_raw_text (note, text);
-
-  /* Now tries to update title */
-
-  rows = g_strsplit (text, "\n", 2);
-
-  /* if we have a line feed, we have a proper title */
-  /* this is equivalent to g_strv_length (rows) > 1 */
-
-  if (rows && rows[0] && rows[1])
-  {
-    gchar *title;
-    gchar *unique_title;
-
-    title = rows[0];
-
-    if (g_strcmp0 (title, biji_item_get_title (BIJI_ITEM (note))) != 0)
-    {
-      unique_title = biji_manager_get_unique_title (biji_item_get_manager (BIJI_ITEM (note)),
-                                                      title);
-
-      biji_note_obj_set_title (note, unique_title);
-      g_free (unique_title);
-    }
-  }
-
-  g_strfreev (rows);
-  g_free (html);
-  g_free (text);
-
-  biji_note_obj_set_mtime (note, g_get_real_time () / G_USEC_PER_SEC);
-  biji_note_obj_save_note (note);
-}
-
-static void
-on_note_color_changed (BijiNoteObj *note, BijiWebkitEditor *self)
-{
-  GdkRGBA color;
-
-  if (biji_note_obj_get_rgba(note,&color))
-    set_editor_color (GTK_WIDGET (self), &color);
-}
-
-
-static void
-open_url ( const char *uri)
-{
-  gtk_show_uri (gdk_screen_get_default (),
-                uri,
-                gtk_get_current_event_time (),
-                NULL);
-}
-
-
-gboolean
-on_navigation_request                  (WebKitWebView             *web_view,
-                                        WebKitWebFrame            *frame,
-                                        WebKitNetworkRequest      *request,
-                                        WebKitWebNavigationAction *navigation_action,
-                                        WebKitWebPolicyDecision   *policy_decision,
-                                        gpointer                   user_data)
-{
-  webkit_web_policy_decision_ignore (policy_decision);
-  open_url (webkit_network_request_get_uri (request));
-  return TRUE;
-}
-
-static void
-biji_webkit_editor_constructed (GObject *obj)
-{
-  BijiWebkitEditor *self;
-  BijiWebkitEditorPrivate *priv;
-  WebKitWebView *view;
-  gchar *body;
-  GdkRGBA color;
-
-  self = BIJI_WEBKIT_EDITOR (obj);
-  view = WEBKIT_WEB_VIEW (self);
-  priv = self->priv;
-
-
-  /* Do not segfault at finalize
-   * if the note died */
-  g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
-
-
-  body = biji_note_obj_get_html (priv->note);
-
-  if (!body)
-    body = html_from_plain_text ("");
-
-  webkit_web_view_load_string (view, body, "application/xhtml+xml", NULL, NULL);
-  g_free (body);
-
-
-  /* Do not be a browser */
-  g_signal_connect (view, "navigation-policy-decision-requested",
-                    G_CALLBACK (on_navigation_request), NULL);
-
-
-  /* Drag n drop */
-  GtkTargetList *targets = webkit_web_view_get_copy_target_list (view);
-  gtk_target_list_add_image_targets (targets, 0, TRUE);
-
-  /* Apply color */
-  if (biji_note_obj_get_rgba (priv->note,&color))
-    set_editor_color (GTK_WIDGET (self), &color);
-
-  priv->color_changed = g_signal_connect (priv->note,
-                                     "color-changed",
-                                     G_CALLBACK (on_note_color_changed),
-                                     self);
-
-  /* Save */
-  priv->content_changed = g_signal_connect (WEBKIT_WEB_VIEW (self),
-                                     "user-changed-contents",
-                                     G_CALLBACK (on_content_changed),
-                                     NULL);
-}
-
-static void
-biji_webkit_editor_get_property (GObject  *object,
-                                 guint     property_id,
-                                 GValue   *value,
-                                 GParamSpec *pspec)
-{
-  BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (object);
-
-  switch (property_id)
-  {
-    case PROP_NOTE:
-      g_value_set_object (value, self->priv->note);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-  }
-}
-
-static void
-biji_webkit_editor_set_property (GObject  *object,
-                                 guint     property_id,
-                                 const GValue *value,
-                                 GParamSpec *pspec)
-{
-  BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (object);
-
-  switch (property_id)
-  {
-    case PROP_NOTE:
-      self->priv->note = g_value_get_object (value);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-  }
-}
-
-static void
-biji_webkit_editor_class_init (BijiWebkitEditorClass *klass)
-{
-  GObjectClass* object_class = G_OBJECT_CLASS (klass);
-
-  object_class->constructed = biji_webkit_editor_constructed;
-  object_class->finalize = biji_webkit_editor_finalize;
-  object_class->get_property = biji_webkit_editor_get_property;
-  object_class->set_property = biji_webkit_editor_set_property;
-
-  properties[PROP_NOTE] = g_param_spec_object ("note",
-                                               "Note",
-                                               "Biji Note Obj",
-                                                BIJI_TYPE_NOTE_OBJ,
-                                                G_PARAM_READWRITE  |
-                                                G_PARAM_CONSTRUCT |
-                                                G_PARAM_STATIC_STRINGS);
-
-  g_object_class_install_property (object_class,PROP_NOTE,properties[PROP_NOTE]);
-
-  biji_editor_signals[EDITOR_CLOSED] = g_signal_new ("closed",
-                                       G_OBJECT_CLASS_TYPE (klass),
-                                       G_SIGNAL_RUN_FIRST,
-                                       0,
-                                       NULL,
-                                       NULL,
-                                       g_cclosure_marshal_VOID__VOID,
-                                       G_TYPE_NONE,
-                                       0);
-
-  g_type_class_add_private (klass, sizeof (BijiWebkitEditorPrivate));
-}
-
-BijiWebkitEditor *
-biji_webkit_editor_new (BijiNoteObj *note)
-{
-  return g_object_new (BIJI_TYPE_WEBKIT_EDITOR,
-                       "note", note,
-                       NULL);
-}

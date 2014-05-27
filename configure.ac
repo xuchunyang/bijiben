@@ -73,7 +73,7 @@ PKG_CHECK_MODULES(BIJIBEN,
                     libxml-2.0
                     $sparql_version
                     uuid
-                    webkitgtk-3.0])
+                    webkit2gtk-3.0])
 
 PKG_CHECK_MODULES(ZEITGEIST, zeitgeist-2.0, [have_zeitgeist=yes], [have_zeitgeist=no])
 
