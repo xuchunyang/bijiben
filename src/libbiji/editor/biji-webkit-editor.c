@@ -102,6 +102,8 @@ biji_webkit_editor_constructed (GObject *obj)
   BijiWebkitEditorPrivate *priv;
   WebKitWebView *view;
   gchar *html_path;
+  gchar *body;
+  GFile *file = g_file_new_for_path ("/tmp/test.html"); /* FIXME: howto free file */
   GdkRGBA color;
     
   self = BIJI_WEBKIT_EDITOR (obj);
@@ -112,18 +114,33 @@ biji_webkit_editor_constructed (GObject *obj)
   /* FIXME: below? */
   /* Do not segfault at finalize
    * if the note died */
-  /* g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note); */
+  g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
 
 
+  /* TODO: load & save note */
+  body = biji_note_obj_get_html (priv->note);
+  g_message ("body: \n%s", body);
+  
   /* Settings */
   /* FIXME: critical here */
   webkit_web_view_set_settings (view, priv->settings);
-
+  /* TODO: Don't be a broswer */
+  /* TODO: spell check */
+  
   /* FIXME: use g_build_filename, see css_path in biji-webkit-editor.c */
-  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/popline/index.html", NULL, NULL);
+  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/Default.html", NULL, NULL);
   webkit_web_view_load_uri (view, html_path);
   g_free (html_path);
 
+  /* FIXME: just for testing save webpage to file */
+  webkit_web_view_save_to_file (view,
+                                file,
+                                WEBKIT_SAVE_MODE_MHTML,
+                                NULL, /* cancle ablt */
+                                NULL, /* callback */
+                                NULL); /* data for callback */
+  g_object_unref (file);
+  
   /* Apply color */
   if (biji_note_obj_get_rgba (priv->note,&color))
     set_editor_color (GTK_WIDGET (self), &color);
