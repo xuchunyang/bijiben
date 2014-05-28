@@ -44,7 +44,6 @@ static GParamSpec *properties[NUM_PROP] = { NULL, };
 
 struct _BijiWebkitEditorPrivate
 {
-  /* FIXME: howto fix compile & build error */
   BijiNoteObj *note;
   /* FIXME: why not signal and how it works */
   gulong color_changed;
@@ -59,7 +58,7 @@ G_DEFINE_TYPE (BijiWebkitEditor, biji_webkit_editor, WEBKIT_TYPE_WEB_VIEW);
 static void
 set_editor_color (GtkWidget *w, GdkRGBA *col)
 {
-  /* FIXME: html/css  or GtkWidget background */
+  /* FIXME: not work for WebKitWebView. use html/css? */
   gtk_widget_override_background_color (w, GTK_STATE_FLAG_NORMAL, col);
 }
 
@@ -103,45 +102,37 @@ biji_webkit_editor_constructed (GObject *obj)
   WebKitWebView *view;
   gchar *html_path;
   gchar *body;
-  GFile *file = g_file_new_for_path ("/tmp/test.html"); /* FIXME: howto free file */
   GdkRGBA color;
     
   self = BIJI_WEBKIT_EDITOR (obj);
   view = WEBKIT_WEB_VIEW (self);
   priv = self->priv;
-  
 
-  /* FIXME: below? */
   /* Do not segfault at finalize
    * if the note died */
   g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
 
 
-  /* TODO: load & save note */
+  /* FIXME: load note */
   body = biji_note_obj_get_html (priv->note);
   g_message ("body: \n%s", body);
   
   /* Settings */
-  /* FIXME: critical here */
+  /* FIXME: critical here, don't know why */
   webkit_web_view_set_settings (view, priv->settings);
-  /* TODO: Don't be a broswer */
-  /* TODO: spell check */
-  
-  /* FIXME: use g_build_filename, see css_path in biji-webkit-editor.c */
-  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/Default.html", NULL, NULL);
-  webkit_web_view_load_uri (view, html_path);
-  g_free (html_path);
+  /* TODO: don't be a broswer */
+  /* TODO: add spell check */
 
-  /* FIXME: just for testing save webpage to file */
-  webkit_web_view_save_to_file (view,
-                                file,
-                                WEBKIT_SAVE_MODE_MHTML,
-                                NULL, /* cancle ablt */
-                                NULL, /* callback */
-                                NULL); /* data for callback */
-  g_object_unref (file);
+  /*
+  webkit_web_view_load_html (view,
+                             "<html><head><style>body {color:blue}</style></head>"
+                             "<body>Hello, world!</body></html>",
+                             NULL);
+  */
+  webkit_web_view_load_uri (view, "https://wiki.gnome.org/Apps/Bijiben");
+
   
-  /* Apply color */
+  /* FIXME: Apply color, not work for WebKitWebView */
   if (biji_note_obj_get_rgba (priv->note,&color))
     set_editor_color (GTK_WIDGET (self), &color);
 
