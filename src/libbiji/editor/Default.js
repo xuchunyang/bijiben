@@ -21,3 +21,9 @@ function getSelectionHtml() {
     }
     return html;
 }
+
+// change background
+function setBackgroundColor(r, g, b, a) {
+    color = "rgba(" + r + "," + g + "," + b + "," + a + ")";
+    document.body.style.backgroundColor=color;
+}

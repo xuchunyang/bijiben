@@ -48,7 +48,7 @@ struct _BijiWebkitEditorPrivate
   /* FIXME: why not signal and how it works */
   gulong color_changed;
   /* TODO: add handle content changed */
-  
+
   WebKitSettings* settings;
   /*TODO: selection and spell check (spell check not easy in HTML5 editiable mode) */
 };
@@ -56,10 +56,21 @@ struct _BijiWebkitEditorPrivate
 G_DEFINE_TYPE (BijiWebkitEditor, biji_webkit_editor, WEBKIT_TYPE_WEB_VIEW);
 
 static void
-set_editor_color (GtkWidget *w, GdkRGBA *col)
+set_editor_color (GtkWidget *web_view, GdkRGBA *color)
 {
-  /* FIXME: not work for WebKitWebView. use html/css? */
-  gtk_widget_override_background_color (w, GTK_STATE_FLAG_NORMAL, col);
+  gchar *script;
+
+  script = g_strdup_printf ("setBackgroundColor(%f, %f, %f, %f)",
+                            color->red * 255,
+                            color->green * 255,
+                            color->blue * 255,
+                            color->alpha);
+  webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (web_view),
+                                  script,
+                                  NULL,
+                                  NULL,
+                                  NULL);
+  g_free (script);
 }
 
 static void
@@ -103,7 +114,7 @@ biji_webkit_editor_constructed (GObject *obj)
   gchar *html_path;
   gchar *body;
   GdkRGBA color;
-    
+
   self = BIJI_WEBKIT_EDITOR (obj);
   view = WEBKIT_WEB_VIEW (self);
   priv = self->priv;
@@ -116,24 +127,19 @@ biji_webkit_editor_constructed (GObject *obj)
   /* FIXME: load note */
   body = biji_note_obj_get_html (priv->note);
   g_message ("body: \n%s", body);
-  
+
   /* Settings */
-  /* FIXME: critical here, don't know why */
   webkit_web_view_set_settings (view, priv->settings);
+
   /* TODO: don't be a broswer */
   /* TODO: add spell check */
 
-  /*
-  webkit_web_view_load_html (view,
-                             "<html><head><style>body {color:blue}</style></head>"
-                             "<body>Hello, world!</body></html>",
-                             NULL);
-  */
-  webkit_web_view_load_uri (view, "https://wiki.gnome.org/Apps/Bijiben");
+  html_path = g_filename_to_uri ("/home/xcy/Hacking/gnome/bijiben/src/libbiji/editor/Default.html", NULL, NULL);
+  webkit_web_view_load_uri (view, html_path);
+  g_free (html_path);
 
-  
-  /* FIXME: Apply color, not work for WebKitWebView */
-  if (biji_note_obj_get_rgba (priv->note,&color))
+  /* FIXME: cannot apply color before html is loaded */
+  if (biji_note_obj_get_rgba (priv->note, &color))
     set_editor_color (GTK_WIDGET (self), &color);
 
   priv->color_changed = g_signal_connect (priv->note,
@@ -192,7 +198,7 @@ biji_webkit_editor_class_init (BijiWebkitEditorClass *klass)
   object_class->finalize = biji_webkit_editor_finalize;
   object_class->get_property = biji_webkit_editor_get_property;
   object_class->set_property = biji_webkit_editor_set_property;
-  
+
   properties[PROP_NOTE] = g_param_spec_object ("note",
                                                "Note",
                                                "Biji Note Obj",
@@ -201,7 +207,7 @@ biji_webkit_editor_class_init (BijiWebkitEditorClass *klass)
                                                 G_PARAM_CONSTRUCT |
                                                 G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class,PROP_NOTE,properties[PROP_NOTE]);
-  
+
   biji_editor2_signals[EDITOR_CLOSED] = g_signal_new ("closed",
                                                       G_OBJECT_CLASS_TYPE (klass),
                                                       G_SIGNAL_RUN_FIRST,
@@ -211,7 +217,7 @@ biji_webkit_editor_class_init (BijiWebkitEditorClass *klass)
                                                       g_cclosure_marshal_VOID__VOID,
                                                       G_TYPE_NONE,
                                                       0);
-  
+
   g_type_class_add_private (klass, sizeof (BijiWebkitEditorPrivate));
 
 }
