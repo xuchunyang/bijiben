@@ -3,8 +3,8 @@ function myFunction() {
 }
 
 // Return: Selection html as string
-function getSelectionHtml() { 
-    var html = ""; 
+function getSelectionHtml() {
+    var html = "";
     if (typeof window.getSelection != "undefined") {
         var sel = window.getSelection();
         if (sel.rangeCount) {
@@ -26,4 +26,11 @@ function getSelectionHtml() {
 function setBackgroundColor(r, g, b, a) {
     color = "rgba(" + r + "," + g + "," + b + "," + a + ")";
     document.body.style.backgroundColor=color;
+}
+
+function getNote()
+{
+    var note = document.getElementById("note");
+    var x = document.getElementById("demo");
+    x.innerHTML = note.textContent;
 }
