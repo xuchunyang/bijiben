@@ -829,7 +829,7 @@ html_from_plain_text                        (gchar *content)
 
   retval = g_strconcat ("<html xmlns=\"http://www.w3.org/1999/xhtml\">",
                         "<link rel=\"stylesheet\" href=\"./Default.css\">",
-                        "<script src=\"./Default.js\"></script>"
+                        "<script src=\"./Default.js\"></script>",
                         "<body contenteditable='true' id='editable'>",
                         "<script type='text/javascript'>",
                         "    window.onload = function () {",
