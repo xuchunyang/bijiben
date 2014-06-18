@@ -828,6 +828,8 @@ html_from_plain_text                        (gchar *content)
                                 NULL);
 
   retval = g_strconcat ("<html xmlns=\"http://www.w3.org/1999/xhtml\">",
+                        "<link rel=\"stylesheet\" href=\"./Default.css\">",
+                        "<script src=\"./Default.js\"></script>"
                         "<body contenteditable='true' id='editable'>",
                         "<script type='text/javascript'>",
                         "    window.onload = function () {",
@@ -1039,4 +1041,3 @@ biji_note_obj_class_init (BijiNoteObjClass *klass)
   item_class->add_notebook = biji_note_obj_add_notebook;
   item_class->remove_notebook = biji_note_obj_remove_notebook;
 }
-
