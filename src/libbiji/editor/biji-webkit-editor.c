@@ -347,7 +347,7 @@ web_view_javascript_finished (GObject      *object,
     {
       g_warning ("Error running javascript: unexpected return value");
     }
-  g_message ("%s", __func__);
+  g_message ("TODO: %s", __func__);
   webkit_javascript_result_unref (js_result);
 }
 
@@ -365,7 +365,6 @@ web_view_get_selected_html (BijiWebkitEditor *self)
 gboolean
 biji_webkit_editor_has_selection (BijiWebkitEditor *self)
 {
-  /* TODO */
   web_view_get_selected_html (self);
   g_message ("TODO: %s", __func__);
   return false;
@@ -374,9 +373,7 @@ biji_webkit_editor_has_selection (BijiWebkitEditor *self)
 gchar *
 biji_webkit_editor_get_selection (BijiWebkitEditor *self)
 {
-  /* TODO */
   g_message ("TODO: %s", __func__);
-  web_view_get_selected_html (WEBKIT_WEB_VIEW (self));
   return NULL;
 }
 
