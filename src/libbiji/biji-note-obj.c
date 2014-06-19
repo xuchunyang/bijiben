@@ -815,7 +815,10 @@ biji_note_obj_set_create_date (BijiNoteObj *note, gint64 time)
 gchar *
 html_from_plain_text                        (gchar *content)
 {
-  gchar *escaped, *retval;
+  gchar *escaped;
+  gchar *retval;
+  gchar *html_template_path;
+  gchar *html_template_content;
 
   if (content == NULL)
     content = "";
@@ -827,18 +830,13 @@ html_from_plain_text                        (gchar *content)
                                 "\n", "<br/>",
                                 NULL);
 
-  retval = g_strconcat ("<html xmlns=\"http://www.w3.org/1999/xhtml\">",
-                        "<link rel=\"stylesheet\" href=\"./Default.css\">",
-                        "<script src=\"./Default.js\"></script>",
-                        "<body contenteditable='true' id='editable'>",
-                        "<script type='text/javascript'>",
-                        "    window.onload = function () {",
-                        "      document.getElementById('editable').focus();",
-                        "    };",
-                        "</script>",
-                        escaped,
-                        "</body></html>", NULL);
+  html_template_path = g_build_filename (DATADIR, "bijiben", "Default.html", NULL);
+  g_file_get_contents (html_template_path, &html_template_content, NULL, NULL);
 
+  retval = g_strdup_printf (html_template_content, escaped);
+
+  g_free (html_template_path);
+  g_free (html_template_content);
   g_free (escaped);
   return retval;
 }
