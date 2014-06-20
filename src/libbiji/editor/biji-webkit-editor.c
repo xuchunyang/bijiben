@@ -17,7 +17,6 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <JavaScriptCore/JSStringRef.h>
 #include <JavaScriptCore/JSValueRef.h>
 
@@ -90,12 +89,72 @@ on_content_changed (WebKitWebView *view)
   g_message ("TODO: %s", __func__);
 }
 
+static void
+note_save_html (GObject *object,
+                GAsyncResult *result,
+                gpointer user_data)
+{
+    WebKitJavascriptResult *js_result;
+    JSValueRef              value;
+    JSGlobalContextRef      context;
+    GError                 *error = NULL;
+
+    js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object), result, &error);
+    if (!js_result) {
+        g_warning ("Error running javascript: %s", error->message);
+        g_error_free (error);
+        return;
+    }
+
+    context = webkit_javascript_result_get_global_context (js_result);
+    value = webkit_javascript_result_get_value (js_result);
+    if (JSValueIsString (context, value)) {
+        JSStringRef js_str_value;
+        gchar      *str_value;
+        gsize       str_length;
+
+        js_str_value = JSValueToStringCopy (context, value, NULL);
+        str_length = JSStringGetMaximumUTF8CStringSize (js_str_value);
+        str_value = (gchar *)g_malloc (str_length);
+        JSStringGetUTF8CString (js_str_value, str_value, str_length);
+        JSStringRelease (js_str_value);
+        g_print ("save HTML Script result: %s\n", str_value);
+
+
+        BijiNoteObj *note = user_data;
+        biji_note_obj_set_html (note, "<html><body>text</body></html>");
+        biji_note_obj_set_raw_text (note, "text");
+
+        biji_note_obj_set_mtime (note, g_get_real_time () / G_USEC_PER_SEC);
+        biji_note_obj_save_note (note);
+
+        g_free (str_value);
+    } else {
+        g_warning ("Error running javascript: unexpected return value");
+    }
+    webkit_javascript_result_unref (js_result);
+
+}
 
 static void
-on_note_save (WebKitWebView *web_view, gpointer user_data)
+note_save (WebKitWebView *web_view)
 {
   // TODO:
   g_message ("TODO: %s", __func__);
+  BijiWebkitEditor     *self = BIJI_WEBKIT_EDITOR (web_view);
+  BijiNoteObj *note = self->priv->note;
+
+  webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
+                                  "getInnerHTML()",
+                                  NULL,
+                                  note_save_html,
+                                  note);
+  /* webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self), */
+  /*                                 "getInnerText()", */
+  /*                                 NULL, */
+  /*                                 note_save_text, */
+  /*                                 note); */
+
 }
 
 static void
@@ -104,11 +163,7 @@ biji_webkit_editor_init (BijiWebkitEditor *self)
   WebKitWebView *view = WEBKIT_WEB_VIEW (self);
   BijiWebkitEditorPrivate *priv;
 
-  priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT_EDITOR, BijiWebkitEditorPrivate);
-  self->priv = priv;
-
-  priv->settings = webkit_settings_new ();
-  priv->selected_text = g_strdup ("");
+  self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT_EDITOR, BijiWebkitEditorPrivate);
 }
 
 static void
@@ -116,6 +171,9 @@ biji_webkit_editor_finalize (GObject *object)
 {
   BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (object);
   BijiWebkitEditorPrivate *priv = self->priv;
+
+  WebKitWebView *view = WEBKIT_WEB_VIEW (self);
+  /* note_save(view); */
 
   G_OBJECT_CLASS (biji_webkit_editor_parent_class)->finalize (object);
 }
@@ -138,7 +196,7 @@ biji_webkit_editor_constructed (GObject *obj)
 
   /* Do not segfault at finalize
    * if the note died */
-  g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
+  /* g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note); */
 
   html = biji_note_obj_get_html (priv->note);
 
@@ -146,7 +204,7 @@ biji_webkit_editor_constructed (GObject *obj)
     html = html_from_plain_text ("");
 
   /* Settings */
-  webkit_web_view_set_settings (view, priv->settings);
+  /* webkit_web_view_set_settings (view, priv->settings); */
 
   webkit_web_view_load_html (view, html, NULL);
 
@@ -163,7 +221,7 @@ biji_webkit_editor_constructed (GObject *obj)
    * update title & save note's meta (mtime, content, etc)
    * but the content changed signal in webkit1 has been remove now
    */
-  g_signal_connect (view, "close", G_CALLBACK (on_note_save), NULL);
+  /* g_signal_connect (view, "close", G_CALLBACK (on_note_save), NULL); */
 }
 
 static void
@@ -365,6 +423,8 @@ web_view_get_selected_html (BijiWebkitEditor *self)
 gboolean
 biji_webkit_editor_has_selection (BijiWebkitEditor *self)
 {
+  note_save(WEBKIT_WEB_VIEW(self));
+
   web_view_get_selected_html (self);
   g_message ("TODO: %s", __func__);
   return false;
