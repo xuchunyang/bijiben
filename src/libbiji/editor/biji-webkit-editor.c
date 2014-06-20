@@ -388,10 +388,12 @@ biji_webkit_editor_apply_format (BijiWebkitEditor *self, gint format)
       break;
 
     case BIJI_BULLET_LIST:
+      command = "insertunorderedList";
       g_warning ("%s : TODO bullet list", __func__);
       break;
 
     case BIJI_ORDER_LIST:
+      command = "insertOrderedList";
       g_warning ("%s : TODO order list", __func__);
       break;
 
@@ -480,14 +482,14 @@ biji_webkit_editor_has_selection (BijiWebkitEditor *self)
   /* FIXME: when to save note */
   web_view_get_selected_html (self);
   g_message ("TODO: %s", __func__);
-  return false;
+  return true;
 }
 
 gchar *
 biji_webkit_editor_get_selection (BijiWebkitEditor *self)
 {
   g_message ("TODO: %s", __func__);
-  return NULL;
+  return "hello";
 }
 
 void
