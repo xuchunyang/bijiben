@@ -45,6 +45,11 @@ css_files = Default.css
 cssdir = $(pkgdatadir)
 css_DATA = $(css_files)
 
+html_files = Default.html
+
+htmldir = $(pkgdatadir)
+html_DATA = $(html_files)
+
 gsettings_SCHEMAS = org.gnome.bijiben.gschema.xml
 @INTLTOOL_XML_NOMERGE_RULE@
 @GSETTINGS_RULES@
@@ -52,6 +57,7 @@ gsettings_SCHEMAS = org.gnome.bijiben.gschema.xml
 EXTRA_DIST =                            \
 	$(desktop_in_files)     	\
 	$(css_files)			\
+    $(html_files)            \
 	org.gnome.bijiben.gschema.xml.in \
 	shell-search-provider-dbus-interfaces.xml \
 	$(service_in_files)		\
