@@ -46,8 +46,7 @@ struct _BijiWebkitEditorPrivate
 {
   BijiNoteObj *note;
   gulong color_changed;
-  /* TODO: add handle content changed */
-  gchar *selected_text;
+  gulong content_changed;
 
   WebKitSettings* settings;
   /* TODO: add spell check */
@@ -81,6 +80,7 @@ on_note_color_changed (BijiNoteObj *note, BijiWebkitEditor *self)
   if (biji_note_obj_get_rgba(note,&color))
     set_editor_color (GTK_WIDGET (self), &color);
 }
+
 
 static void
 note_save_html (GObject *object,
@@ -117,9 +117,9 @@ note_save_html (GObject *object,
         /* FIXME: how to save note? */
         BijiNoteObj *note = user_data;
         biji_note_obj_set_html (note, str_value);
-        biji_note_obj_set_raw_text (note, "text");
+
         /* FIXME: how to get title */
-        biji_note_obj_set_title (note, "I'm title");
+        biji_note_obj_set_title (note, "I'm the title");
 
         biji_note_obj_set_mtime (note, g_get_real_time () / G_USEC_PER_SEC);
         biji_note_obj_save_note (note);
@@ -179,15 +179,10 @@ note_save_text (GObject *object,
 
 }
 
-
-
-
 static void
-note_save (WebKitWebView *web_view)
+on_content_changed (WebKitWebView *view)
 {
-  // TODO:
-  g_message ("TODO: %s", __func__);
-  BijiWebkitEditor     *self = BIJI_WEBKIT_EDITOR (web_view);
+  BijiWebkitEditor     *self = BIJI_WEBKIT_EDITOR (view);
   BijiNoteObj *note = self->priv->note;
 
   webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
@@ -242,13 +237,14 @@ biji_webkit_editor_constructed (GObject *obj)
 
   /* Do not segfault at finalize
    * if the note died */
-  /* g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note); */
+  g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
 
   html = biji_note_obj_get_html (priv->note);
 
-  g_message ("================\n");
+  g_message ("================");
   g_message ("%s", html);
-  g_message ("================\n");
+  g_message ("================");
+
 
   if (!html)
     html = html_from_plain_text ("");
@@ -267,11 +263,10 @@ biji_webkit_editor_constructed (GObject *obj)
                                           G_CALLBACK (on_note_color_changed),
                                           self);
 
-  /* FIXME: "Save" in webkit1:
-   * update title & save note's meta (mtime, content, etc)
-   * but the content changed signal in webkit1 has been remove now
-   */
-  /* g_signal_connect (view, "close", G_CALLBACK (on_note_save), NULL); */
+  priv->content_changed = g_signal_connect (view,
+                                            "script-dialog",
+                                            G_CALLBACK (on_content_changed),
+                                            NULL);
 }
 
 static void
@@ -389,12 +384,10 @@ biji_webkit_editor_apply_format (BijiWebkitEditor *self, gint format)
 
     case BIJI_BULLET_LIST:
       command = "insertunorderedList";
-      g_warning ("%s : TODO bullet list", __func__);
       break;
 
     case BIJI_ORDER_LIST:
       command = "insertOrderedList";
-      g_warning ("%s : TODO order list", __func__);
       break;
 
     default:
@@ -449,7 +442,6 @@ web_view_javascript_finished (GObject      *object,
       str_value = (gchar *)g_malloc (str_length);
       JSStringGetUTF8CString (js_str_value, str_value, str_length);
       JSStringRelease (js_str_value);
-      priv->selected_text = g_strdup (str_value);
 
       /* g_print ("Script result: %s\n", str_value); /\* FIXME: return str_value *\/ */
       g_print ("====Selected HTML Script result====\n%s\n", str_value);
@@ -460,7 +452,6 @@ web_view_javascript_finished (GObject      *object,
     {
       g_warning ("Error running javascript: unexpected return value");
     }
-  g_message ("TODO: %s", __func__);
   webkit_javascript_result_unref (js_result);
 }
 
@@ -468,27 +459,22 @@ static void
 web_view_get_selected_html (BijiWebkitEditor *self)
 {
   webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
-                                  "getSelectionHtml()",
+                                  "getSelectionAsString()",
                                   NULL,
                                   web_view_javascript_finished,
                                   self);
-  g_message ("%s", __func__);
 }
 
 gboolean
 biji_webkit_editor_has_selection (BijiWebkitEditor *self)
 {
-  note_save(WEBKIT_WEB_VIEW(self));
-  /* FIXME: when to save note */
   web_view_get_selected_html (self);
-  g_message ("TODO: %s", __func__);
-  return true;
+  return false;
 }
 
 gchar *
 biji_webkit_editor_get_selection (BijiWebkitEditor *self)
 {
-  g_message ("TODO: %s", __func__);
   return "hello";
 }
 
