@@ -112,12 +112,9 @@ note_save_html (GObject *object,
         JSStringGetUTF8CString (js_str_value, str_value, str_length);
         JSStringRelease (js_str_value);
 
-        /* FIXME: how to save note? */
         BijiNoteObj *note = user_data;
-        biji_note_obj_set_html (note, str_value);
-
-        /* FIXME: how to get title */
-        biji_note_obj_set_title (note, "I'm the title");
+        g_warning ("outer html\n%s", str_value);
+        biji_note_obj_set_html (note, str_value);c
 
         biji_note_obj_set_mtime (note, g_get_real_time () / G_USEC_PER_SEC);
         biji_note_obj_save_note (note);
@@ -139,6 +136,8 @@ note_save_text (GObject *object,
     JSValueRef              value;
     JSGlobalContextRef      context;
     GError                 *error = NULL;
+    gchar                  *html, *text;
+    gchar                 **rows;
 
     js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object),
                                                        result, &error);
@@ -165,7 +164,35 @@ note_save_text (GObject *object,
         BijiNoteObj *note = user_data;
         biji_note_obj_set_raw_text (note, str_value);
 
-        biji_note_obj_set_mtime (note, g_get_real_time () / G_USEC_PER_SEC);
+        /* Now tries to update title */
+
+        rows = g_strsplit (text, "\n", 2);
+
+        /* if we have a line feed, we have a proper title */
+        /* this is equivalent to g_strv_length (rows) > 1 */
+
+        if (rows && rows[0] && rows[1])
+          {
+            gchar *title;
+            gchar *unique_title;
+
+            title = rows[0];
+
+            if (g_strcmp0 (title, biji_item_get_title (BIJI_ITEM (note))) != 0)
+              {
+                unique_title = biji_manager_get_unique_title (biji_item_get_manager (BIJI_ITEM (note)),
+                                                              title);
+
+                biji_note_obj_set_title (note, unique_title);
+                g_free (unique_title);
+              }
+          }
+
+        g_strfreev (rows);
+        g_free (html);
+        g_free (text);
+
+
         biji_note_obj_save_note (note);
 
         g_free (str_value);
@@ -183,7 +210,7 @@ on_content_changed (WebKitWebView *view)
   BijiNoteObj *note = self->priv->note;
 
   webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
-                                  "getInnerHTML()",
+                                  "getOuterHTML()",
                                   NULL,
                                   note_save_html,
                                   note);

@@ -37,14 +37,14 @@
     <script type='text/javascript'>
      window.onload = function () {
        document.getElementById('editable').focus();
-       document.getElementById('editable').addEventListener("input", function() {
-           alert("input event fired");
+       document.getElementById('editable').addEventListener('input', function() {
+           alert('input event fired');
        }, false);
      };
 
-     function getInnerHTML()
+     function getOuterHTML()
      {
-       var content = document.getElementById('editable').innerHTML;
+       var content = document.getElementById('editable').outerHTML;
        return content;
      }
 
@@ -57,7 +57,7 @@
      // change background
      function setBackgroundColor(r, g, b, a)
      {
-       color = "rgba(" + r + "," + g + "," + b + "," + a + ")";
+       color = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
        document.body.style.backgroundColor=color;
      }
 
@@ -68,8 +68,6 @@
     </script>
   </head>
 
-  <body id='editable' contenteditable='true'>
     %s
-  </body>
 
 </html>

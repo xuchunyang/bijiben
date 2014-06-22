@@ -833,6 +833,8 @@ html_from_plain_text                        (gchar *content)
   html_template_path = g_build_filename (DATADIR, "bijiben", "Default.html", NULL);
   g_file_get_contents (html_template_path, &html_template_content, NULL, NULL);
 
+  escaped = g_strdup_printf ("<body id='editable' contenteditable='true'> %s </body>",
+                             escaped);
   retval = g_strdup_printf (html_template_content, escaped);
 
   g_free (html_template_path);
@@ -851,6 +853,10 @@ html_from_html_text                        (gchar *html)
 
   html_template_path = g_build_filename (DATADIR, "bijiben", "Default.html", NULL);
   g_file_get_contents (html_template_path, &html_template_content, NULL, NULL);
+
+  html = biji_str_mass_replace (html,
+                                "<br>", "<br/>",
+                                NULL);
 
   retval = g_strdup_printf (html_template_content, html);
 
