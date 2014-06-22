@@ -186,7 +186,7 @@ on_content_changed (WebKitWebView *view)
   BijiNoteObj *note = self->priv->note;
 
   webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
-                                  "getInnerHTML()",
+                                  "getOuterHTML()",
                                   NULL,
                                   note_save_html,
                                   note);
