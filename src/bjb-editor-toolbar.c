@@ -144,14 +144,14 @@ bjb_editor_toolbar_set_property (GObject  *object,
 /* TODO identify selected text. if some text is selected,
  * compute x (left), y (top), width (columns), height (rows) */
 static void
-editor_toolbar_align (BjbEditorToolbar *self, GdkEvent  *event)
+editor_toolbar_align (BjbEditorToolbar *self, gint x, gint y)
 {
   gint                     x_alignment, y_alignment;
   BjbEditorToolbarPrivate *priv = self->priv;
   cairo_rectangle_int_t    rect;
 
-  x_alignment = event->button.x;// + EDITOR_TOOLBAR_X_OFFSET;
-  y_alignment = event->button.y + EDITOR_TOOLBAR_Y_OFFSET;
+  x_alignment = x; // + EDITOR_TOOLBAR_X_OFFSET;
+  y_alignment = y + EDITOR_TOOLBAR_Y_OFFSET;
 
   if ( x_alignment < 0)
     x_alignment = 0;
@@ -165,10 +165,10 @@ editor_toolbar_align (BjbEditorToolbar *self, GdkEvent  *event)
 }
 
 static void
-show_edit_bar (BjbEditorToolbar *self, GdkEvent *event)
+show_edit_bar (BjbEditorToolbar *self, gint x, gint y)
 {
-  if (event)
-    editor_toolbar_align (self, event);
+  // if (event)
+  editor_toolbar_align (self, x, y);
 
   bjb_editor_toolbar_fade_in (self);
 }
@@ -177,7 +177,8 @@ show_edit_bar (BjbEditorToolbar *self, GdkEvent *event)
 typedef struct
 {
   BjbEditorToolbar *self;
-  GdkEvent         *event;
+  gint x;
+  gint y;
 } BjbToolbarEvent;
 
 
@@ -187,7 +188,9 @@ bjb_toolbar_event_new (BjbEditorToolbar *self, GdkEvent *event)
   BjbToolbarEvent *ret = g_new0(BjbToolbarEvent, 1);
 
   ret->self = self;
-  ret->event = event;
+  ret->x = event->button.x;
+  ret->y = event->button.y;
+
   return ret;
 }
 
@@ -199,18 +202,14 @@ show_or_hide_depending_on_selection (gpointer data, gpointer result)
   gchar* selection = result;
 
   if (BJB_IS_EDITOR_TOOLBAR (event->self))
-    g_warning ("editor toolbar is there!");
-
-  if (event->event != NULL)
-    g_warning ("event is here");
-
+    /* g_warning ("editor toolbar is there!") */;
 
   if (selection == NULL ||
       g_strcmp0 (selection, "") == 0)
     bjb_editor_toolbar_fade_out (event->self);
 
   else
-    show_edit_bar (event->self, event->event);
+    show_edit_bar (event->self, event->x, event->y);
 
   g_free (event);
 }
@@ -263,7 +262,7 @@ on_button_pressed (GtkWidget *widget,
   {
     /* Show toolbar on right-click */
     case 3:
-      show_edit_bar (self, event);
+      show_edit_bar (self, event->button.x, event->button.y);
       return TRUE;
 
     /* Do not break stuff otherwise */
