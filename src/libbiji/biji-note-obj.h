@@ -211,10 +211,10 @@ void             biji_note_obj_editor_apply_format           (BijiNoteObj *note,
                                                               gint format);
 
 
-gboolean         biji_note_obj_editor_has_selection          (BijiNoteObj *note);
-
-
-gchar           *biji_note_obj_editor_get_selection          (BijiNoteObj *note);
+/* GFunc will be called with user_data, and sting result has argument */
+void             biji_note_obj_editor_get_selection          (BijiNoteObj *note,
+                                                              GFunc        callback,
+							      gpointer     user_data);
 
 
 void             biji_note_obj_editor_cut                    (BijiNoteObj *note);

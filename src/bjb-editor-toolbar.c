@@ -22,7 +22,7 @@
  * X offset might be replaced by something like -(toolbar size/2)
  * Y offset might not be replaced                    */
 #define EDITOR_TOOLBAR_X_OFFSET -120;
-#define EDITOR_TOOLBAR_Y_OFFSET   -15;
+#define EDITOR_TOOLBAR_Y_OFFSET -15;
 
 #include "config.h"
 
@@ -30,6 +30,7 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 #include <libbiji/libbiji.h>
+#include <libbiji/biji-note-obj.h>
 
 #include "bjb-bijiben.h"
 #include "bjb-editor-toolbar.h"
@@ -172,21 +173,64 @@ show_edit_bar (BjbEditorToolbar *self, GdkEvent *event)
   bjb_editor_toolbar_fade_in (self);
 }
 
+
+typedef struct
+{
+  BjbEditorToolbar *self;
+  GdkEvent         *event;
+} BjbToolbarEvent;
+
+
+BjbToolbarEvent *
+bjb_toolbar_event_new (BjbEditorToolbar *self, GdkEvent *event)
+{
+  BjbToolbarEvent *ret = g_new0(BjbToolbarEvent, 1);
+
+  ret->self = self;
+  ret->event = event;
+  return ret;
+}
+
+
+static void
+show_or_hide_depending_on_selection (gpointer data, gpointer result)
+{
+  BjbToolbarEvent *event = data;
+  gchar* selection = result;
+
+  if (BJB_IS_EDITOR_TOOLBAR (event->self))
+    g_warning ("editor toolbar is there!");
+
+  if (event->event != NULL)
+    g_warning ("event is here");
+
+
+  if (selection == NULL ||
+      g_strcmp0 (selection, "") == 0)
+    bjb_editor_toolbar_fade_out (event->self);
+
+  else
+    show_edit_bar (event->self, event->event);
+
+  g_free (event);
+}
+
+
 static gboolean
 on_button_released (GtkWidget *widget,
                     GdkEvent *event,
                     BjbEditorToolbar *self)
 {
+  BjbToolbarEvent *ev;
+
   switch (event->button.button)
   {
     /* If left click, see if selection */
     case 1:
-      if (biji_note_obj_editor_has_selection (self->priv->note))
-        show_edit_bar (self, event);
-
-      else
-        bjb_editor_toolbar_fade_out (self);
-
+      ev = bjb_toolbar_event_new (self, event);
+      biji_note_obj_editor_get_selection (self->priv->note,
+					  show_or_hide_depending_on_selection,
+					  ev);
       return FALSE;
 
     default:
@@ -200,12 +244,12 @@ on_key_released                     (GtkWidget *widget,
                                      gpointer   user_data)
 {
   BjbEditorToolbar *self = BJB_EDITOR_TOOLBAR (user_data);
+  BjbToolbarEvent *ev;
 
-  if (biji_note_obj_editor_has_selection (self->priv->note))
-    show_edit_bar (self, event);
-
-  else
-    bjb_editor_toolbar_fade_out (self);
+  ev = bjb_toolbar_event_new (self, event);
+  biji_note_obj_editor_get_selection (self->priv->note,
+                                      show_or_hide_depending_on_selection,
+                                      ev);
 
   return FALSE;
 }
@@ -274,17 +318,17 @@ strike_button_callback (GtkWidget *button, BjbEditorToolbar *self)
 }
 
 static void
-link_callback (GtkWidget *button, BjbEditorToolbar *self)
+do_link (gpointer user_data, gpointer result)
 {
+  BjbEditorToolbar        *self = user_data;
+  gchar                   *link = result;
   BjbSettings             *settings;
-  gchar                   *link;
   GtkWidget               *window;
-  BijiNoteObj             *result;
+  BijiNoteObj             *note;
   GdkRGBA                 color;
   BijiManager            *manager;
   BjbEditorToolbarPrivate *priv = self->priv;
 
-  link = biji_note_obj_editor_get_selection (priv->note);
 
   if (link == NULL)
     return;
@@ -293,16 +337,24 @@ link_callback (GtkWidget *button, BjbEditorToolbar *self)
   manager = bjb_window_base_get_manager(window);
 
   settings = bjb_app_get_settings (g_application_get_default ());
-  result = biji_manager_note_new (manager,
-                                    link,
-                                    bjb_settings_get_default_location (settings));
+  note = biji_manager_note_new (manager,
+                                link,
+                                bjb_settings_get_default_location (settings));
 
   /* Change result color. */
   if (biji_note_obj_get_rgba (priv->note, &color))
-    biji_note_obj_set_rgba (result, &color);
+    biji_note_obj_set_rgba (note, &color);
 
-  bijiben_new_window_for_note(g_application_get_default(), result);
+  bijiben_new_window_for_note(g_application_get_default(), note);
   bjb_editor_toolbar_fade_out (self);
+}
+
+static void
+link_callback (GtkWidget *button, BjbEditorToolbar *self)
+{
+  biji_note_obj_editor_get_selection (self->priv->note,
+                                      do_link,
+                                      self);
 }
 
 static void

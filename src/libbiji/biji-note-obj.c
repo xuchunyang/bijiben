@@ -953,22 +953,16 @@ biji_note_obj_editor_apply_format (BijiNoteObj *note, gint format)
     biji_webkit_editor_apply_format ( note->priv->editor , format);
 }
 
-gboolean
-biji_note_obj_editor_has_selection (BijiNoteObj *note)
+void
+biji_note_obj_editor_get_selection (BijiNoteObj *note,
+                                    GFunc        callback,
+                                    gpointer     user_data)
 {
   if (biji_note_obj_is_opened (note))
-    return biji_webkit_editor_has_selection (note->priv->editor);
+    web_view_get_selected_text (note->priv->editor, callback, user_data);
 
-  return FALSE;
-}
-
-gchar *
-biji_note_obj_editor_get_selection (BijiNoteObj *note)
-{
-  if (biji_note_obj_is_opened (note))
-    return biji_webkit_editor_get_selection (note->priv->editor);
-
-  return NULL;
+  else
+    callback (user_data, NULL);
 }
 
 void biji_note_obj_editor_cut (BijiNoteObj *note)

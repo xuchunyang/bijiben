@@ -57,9 +57,7 @@ void biji_webkit_editor_apply_format (BijiWebkitEditor *self, gint format);
 
 void biji_webkit_editor_apply_format_new (BijiWebkitEditor *self, gchar *format);
 
-gboolean biji_webkit_editor_has_selection (BijiWebkitEditor *self);
-
-gchar * biji_webkit_editor_get_selection (BijiWebkitEditor *self);
+void web_view_get_selected_html (BijiWebkitEditor *self, GFunc user_callback, gpointer user_data);
 
 void biji_webkit_editor_cut (BijiWebkitEditor *self);
 

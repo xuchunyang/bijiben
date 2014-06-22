@@ -49,7 +49,6 @@ struct _BijiWebkitEditorPrivate
   gulong content_changed;
 
   WebKitSettings* settings;
-  /* TODO: add spell check */
 };
 
 G_DEFINE_TYPE (BijiWebkitEditor, biji_webkit_editor, WEBKIT_TYPE_WEB_VIEW);
@@ -92,7 +91,8 @@ note_save_html (GObject *object,
     JSGlobalContextRef      context;
     GError                 *error = NULL;
 
-    js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object), result, &error);
+    js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object),
+                                                       result, &error);
     if (!js_result) {
         g_warning ("Error running javascript: %s", error->message);
         g_error_free (error);
@@ -111,8 +111,6 @@ note_save_html (GObject *object,
         str_value = (gchar *)g_malloc (str_length);
         JSStringGetUTF8CString (js_str_value, str_value, str_length);
         JSStringRelease (js_str_value);
-
-        g_message ("====save HTML Script result====\n%s\n", str_value);
 
         /* FIXME: how to save note? */
         BijiNoteObj *note = user_data;
@@ -142,7 +140,8 @@ note_save_text (GObject *object,
     JSGlobalContextRef      context;
     GError                 *error = NULL;
 
-    js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object), result, &error);
+    js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object),
+                                                       result, &error);
     if (!js_result) {
         g_warning ("Error running javascript: %s", error->message);
         g_error_free (error);
@@ -161,8 +160,6 @@ note_save_text (GObject *object,
         str_value = (gchar *)g_malloc (str_length);
         JSStringGetUTF8CString (js_str_value, str_value, str_length);
         JSStringRelease (js_str_value);
-
-        g_message ("====save Text Script result====\n%s\n", str_value);
 
         /* FIXME: how to save note? */
         BijiNoteObj *note = user_data;
@@ -204,7 +201,8 @@ biji_webkit_editor_init (BijiWebkitEditor *self)
   WebKitWebView *view = WEBKIT_WEB_VIEW (self);
   BijiWebkitEditorPrivate *priv;
 
-  self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT_EDITOR, BijiWebkitEditorPrivate);
+  self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_WEBKIT_EDITOR,
+                                            BijiWebkitEditorPrivate);
 }
 
 static void
@@ -240,11 +238,6 @@ biji_webkit_editor_constructed (GObject *obj)
   g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
 
   html = biji_note_obj_get_html (priv->note);
-
-  g_message ("================");
-  g_message ("%s", html);
-  g_message ("================");
-
 
   if (!html)
     html = html_from_plain_text ("");
@@ -398,7 +391,8 @@ biji_webkit_editor_apply_format (BijiWebkitEditor *self, gint format)
 
   if (command != NULL)
     {
-      script = g_strdup_printf ("document.execCommand('%s', false, null)", command);
+      script = g_strdup_printf ("document.execCommand('%s', false, null)",
+                                command);
       webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
                                       script,
                                       NULL,
@@ -409,16 +403,47 @@ biji_webkit_editor_apply_format (BijiWebkitEditor *self, gint format)
   g_free(script);
 }
 
-static void
-web_view_javascript_finished (GObject      *object,
-                              GAsyncResult *result,
-                              gpointer      user_data)
+/* Helper struct */
+typedef struct
 {
-  WebKitJavascriptResult *js_result;
-  JSValueRef              value;
-  JSGlobalContextRef      context;
-  GError                 *error = NULL;
-  BijiWebkitEditor *self = BIJI_WEBKIT_EDITOR (user_data);
+  BijiWebkitEditor *self;
+  GFunc             user_callback;
+  gpointer          user_data;
+} JSUserCallback;
+
+static JSUserCallback*
+js_user_callback_new (BijiWebkitEditor *self,
+                      GFunc user_callback,
+                      gpointer user_data)
+{
+  JSUserCallback *cb = g_new0 (JSUserCallback, 1);
+  cb->self = self;
+  cb->user_callback = user_callback;
+  cb->user_data = user_data;
+
+  return cb;
+}
+
+
+/* cb only contains pointer,
+ * nothing is allocated there */
+static void
+js_user_callback_free (JSUserCallback *cb)
+{
+  g_free (cb);
+}
+
+static void
+on_selection_got (GObject      *object,
+                  GAsyncResult *result,
+                  gpointer      user_data)
+{
+  WebKitJavascriptResult  *js_result;
+  JSValueRef               value;
+  JSGlobalContextRef       context;
+  GError                  *error = NULL;
+  JSUserCallback          *cb = user_data;
+  BijiWebkitEditor        *self = cb->self;
   BijiWebkitEditorPrivate *priv = self->priv;
 
   js_result = webkit_web_view_run_javascript_finish (WEBKIT_WEB_VIEW (object),
@@ -428,6 +453,7 @@ web_view_javascript_finished (GObject      *object,
     {
       g_warning ("Error running javascript: %s", error->message);
       g_error_free (error);
+      js_user_callback_free (cb);
       return;
     }
 
@@ -445,8 +471,9 @@ web_view_javascript_finished (GObject      *object,
       JSStringGetUTF8CString (js_str_value, str_value, str_length);
       JSStringRelease (js_str_value);
 
-      /* g_print ("Script result: %s\n", str_value); /\* FIXME: return str_value *\/ */
-      g_print ("====Selected HTML Script result====\n%s\n", str_value);
+      /* Call the user callback */
+      cb->user_callback (cb->user_data, str_value);
+      js_user_callback_free (cb);
 
       g_free (str_value);
     }
@@ -455,29 +482,23 @@ web_view_javascript_finished (GObject      *object,
       g_warning ("Error running javascript: unexpected return value");
     }
   webkit_javascript_result_unref (js_result);
+
 }
 
-static void
-web_view_get_selected_html (BijiWebkitEditor *self)
+void
+web_view_get_selected_text (BijiWebkitEditor *self,
+                            GFunc user_callback,
+                            gpointer user_data)
 {
+  JSUserCallback *cb;
+
+  cb = js_user_callback_new (self, user_callback, user_data);
+
   webkit_web_view_run_javascript (WEBKIT_WEB_VIEW (self),
                                   "getSelectionAsString()",
                                   NULL,
-                                  web_view_javascript_finished,
-                                  self);
-}
-
-gboolean
-biji_webkit_editor_has_selection (BijiWebkitEditor *self)
-{
-  web_view_get_selected_html (self);
-  return false;
-}
-
-gchar *
-biji_webkit_editor_get_selection (BijiWebkitEditor *self)
-{
-  return "hello";
+                                  on_selection_got,
+                                  cb);
 }
 
 void
