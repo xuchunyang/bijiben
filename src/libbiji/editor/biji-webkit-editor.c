@@ -248,6 +248,8 @@ biji_webkit_editor_constructed (GObject *obj)
 
   if (!html)
     html = html_from_plain_text ("");
+  else
+    html = html_from_html_text (html);
 
   /* Settings */
   /* webkit_web_view_set_settings (view, priv->settings); */

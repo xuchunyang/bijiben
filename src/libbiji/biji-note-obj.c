@@ -841,6 +841,25 @@ html_from_plain_text                        (gchar *content)
   return retval;
 }
 
+gchar *
+html_from_html_text                        (gchar *html)
+{
+  gchar *escaped;
+  gchar *retval;
+  gchar *html_template_path;
+  gchar *html_template_content;
+
+  html_template_path = g_build_filename (DATADIR, "bijiben", "Default.html", NULL);
+  g_file_get_contents (html_template_path, &html_template_content, NULL, NULL);
+
+  retval = g_strdup_printf (html_template_content, html);
+
+  g_free (html_template_path);
+  g_free (html_template_content);
+  g_free (html);
+  return retval;
+}
+
 
 gchar *
 biji_note_obj_get_html (BijiNoteObj *note)
