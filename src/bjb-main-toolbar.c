@@ -814,11 +814,11 @@ bjb_note_menu_new (BjbMainToolbar *self)
   gtk_menu_shell_append (GTK_MENU_SHELL (result), priv->share);
   g_signal_connect (priv->share, "activate",
                     G_CALLBACK (on_email_note_callback), priv->note);
-  /* FIXME: save note here when click share */
-  /* g_signal_connect_swapped (biji_note_obj_get_editor (priv->note), */
-  /*                           "user-changed-contents", */
-  /*                           G_CALLBACK (on_note_content_changed), */
-  /*                           self); */
+
+  g_signal_connect_swapped (biji_note_obj_get_editor (priv->note),
+                            "user-changed-contents",
+                            G_CALLBACK (on_note_content_changed),
+                            self);
 
   on_note_content_changed (self);
 
