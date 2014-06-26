@@ -114,7 +114,13 @@ note_save_html (GObject *object,
 
         BijiNoteObj *note = user_data;
         g_warning ("outer html\n%s", str_value);
-        biji_note_obj_set_html (note, str_value);
+
+        GRegex *regex;
+        gchar *xhtml;
+
+        regex = g_regex_new ("<br>", 0, 0, NULL);
+        xhtml  = g_regex_replace_literal (regex, str_value, -1, 0, "<br/>", 0, NULL);
+        biji_note_obj_set_html (note, xhtml);
 
         biji_note_obj_set_mtime (note, g_get_real_time () / G_USEC_PER_SEC);
         biji_note_obj_save_note (note);

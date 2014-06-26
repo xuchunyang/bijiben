@@ -854,15 +854,10 @@ html_from_html_text                        (gchar *html)
   html_template_path = g_build_filename (DATADIR, "bijiben", "Default.html", NULL);
   g_file_get_contents (html_template_path, &html_template_content, NULL, NULL);
 
-  html = biji_str_mass_replace (html,
-                                "<br>", "<br/>",
-                                NULL);
-
   retval = g_strdup_printf (html_template_content, html);
 
   g_free (html_template_path);
   g_free (html_template_content);
-  g_free (html);
   return retval;
 }
 
