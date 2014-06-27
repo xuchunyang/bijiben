@@ -119,12 +119,15 @@ note_save_html (GObject *object,
         gchar *xhtml;
 
         regex = g_regex_new ("<br>", 0, 0, NULL);
-        xhtml  = g_regex_replace_literal (regex, str_value, -1, 0, "<br/>", 0, NULL);
+        xhtml  = g_regex_replace_literal (regex, str_value, -1, 0, "<br/>", 0,
+                                          NULL);
         biji_note_obj_set_html (note, xhtml);
 
         biji_note_obj_set_mtime (note, g_get_real_time () / G_USEC_PER_SEC);
         biji_note_obj_save_note (note);
 
+        g_free (xhtml);
+        g_regex_unref(regex);
         g_free (str_value);
     } else {
         g_warning ("Error running javascript: unexpected return value");
@@ -166,41 +169,9 @@ note_save_text (GObject *object,
         JSStringGetUTF8CString (js_str_value, str_value, str_length);
         JSStringRelease (js_str_value);
 
-        /* FIXME: how to save note? */
         BijiNoteObj *note = user_data;
         biji_note_obj_set_raw_text (note, str_value);
-
-        /* Now tries to update title */
-
-        rows = g_strsplit (text, "\n", 2);
-
-        /* if we have a line feed, we have a proper title */
-        /* this is equivalent to g_strv_length (rows) > 1 */
-
-        if (rows && rows[0] && rows[1])
-          {
-            gchar *title;
-            gchar *unique_title;
-
-            title = rows[0];
-
-            if (g_strcmp0 (title, biji_item_get_title (BIJI_ITEM (note))) != 0)
-              {
-                unique_title = biji_manager_get_unique_title (biji_item_get_manager (BIJI_ITEM (note)),
-                                                              title);
-
-                biji_note_obj_set_title (note, unique_title);
-                g_free (unique_title);
-              }
-          }
-
-        g_strfreev (rows);
-        g_free (html);
-        g_free (text);
-
-
         biji_note_obj_save_note (note);
-
         g_free (str_value);
     } else {
         g_warning ("Error running javascript: unexpected return value");
