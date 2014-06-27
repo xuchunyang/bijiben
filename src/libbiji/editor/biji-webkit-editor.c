@@ -113,7 +113,6 @@ note_save_html (GObject *object,
         JSStringRelease (js_str_value);
 
         BijiNoteObj *note = user_data;
-        g_warning ("outer html\n%s", str_value);
 
         GRegex *regex;
         gchar *xhtml;
@@ -230,7 +229,7 @@ biji_webkit_editor_constructed (GObject *obj)
   BijiWebkitEditorPrivate *priv;
   WebKitWebView *view;
   gchar *html_path;
-  gchar *html;
+  gchar *body, *html;
   GdkRGBA color;
 
   self = BIJI_WEBKIT_EDITOR (obj);
@@ -241,21 +240,20 @@ biji_webkit_editor_constructed (GObject *obj)
    * if the note died */
   g_object_add_weak_pointer (G_OBJECT (priv->note), (gpointer*) &priv->note);
 
-  html = biji_note_obj_get_html (priv->note);
+  body = biji_note_obj_get_html (priv->note);
 
-  if (!html)
+  if (!body)
     html = html_from_plain_text ("");
   else
-    html = html_from_html_text (html);
-
-  /* Settings */
-  /* webkit_web_view_set_settings (view, priv->settings); */
+    html = html_from_html_text (body);
 
   webkit_web_view_load_html (view, html, NULL);
+  g_free (body);
+  g_free (html);
 
   /* FIXME: cannot apply color before html is loaded */
   if (biji_note_obj_get_rgba (priv->note, &color))
-    set_editor_color (GTK_WIDGET (self), &color);
+    set_editor_color (view, &color);
 
   priv->color_changed = g_signal_connect (priv->note,
                                           "color-changed",
