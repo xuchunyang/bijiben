@@ -170,8 +170,31 @@ note_save_text (GObject *object,
 
         BijiNoteObj *note = user_data;
         biji_note_obj_set_raw_text (note, str_value);
-        biji_note_obj_save_note (note);
+
+        /* Now try to update title */
+
+        gchar **rows = g_strsplit (str_value, "\n", 2);
+
+        if (rows && rows[0] && rows[1])
+        {
+          gchar *title;
+          gchar *unique_title;
+
+          title = rows[0];
+          g_warning ("Title: %s", title);
+          if (g_strcmp0 (title, biji_item_get_title (BIJI_ITEM (note))) != 0)
+          {
+            unique_title = biji_manager_get_unique_title(biji_item_get_manager(BIJI_ITEM (note)),
+                                                         title);
+            biji_note_obj_set_title(note, unique_title);
+            g_free (unique_title);
+          }
+        }
+
+        g_strfreev (rows);
         g_free (str_value);
+
+        biji_note_obj_save_note (note);
     } else {
         g_warning ("Error running javascript: unexpected return value");
     }
