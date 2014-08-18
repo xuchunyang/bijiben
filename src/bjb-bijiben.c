@@ -309,7 +309,7 @@ on_client_got (GObject *source_object,
     object = GOA_OBJECT (l->data);
     account =  goa_object_get_account (object);
 
-    if (goa_object_peek_mail (object) ||
+    if (goa_object_peek_mail (object) &&
         ! goa_account_get_mail_disabled (account))
     {
       biji_manager_add_mail_goa_object (self->priv->manager, object);
