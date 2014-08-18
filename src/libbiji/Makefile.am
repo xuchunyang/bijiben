@@ -80,6 +80,10 @@ libbiji_la_SOURCES =  \
 	provider/biji-own-cloud-note.h \
 	provider/biji-own-cloud-provider.c \
 	provider/biji-own-cloud-provider.h \
+	provider/biji-mail-note.c \
+	provider/biji-mail-note.h \
+	provider/biji-mail-provider.c \
+	provider/biji-mail-provider.h \
 	provider/biji-provider.c \
 	provider/biji-provider.h \
 	serializer/biji-lazy-serializer.c \
