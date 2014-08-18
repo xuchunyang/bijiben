@@ -43,9 +43,6 @@ struct BijiOwnCloudNotePrivate_
   GFile *location;
   gchar *basename;
   GCancellable *cancellable; //TODO cancel write to file
-
-  /* Ensure not to save while application quits & unneeded. */
-  gboolean needs_save;
 };
 
 
@@ -255,10 +252,6 @@ create_new_file (BijiOwnCloudNote *self, const gchar *basename)
 static void
 on_timeout (BijiOwnCloudNote *self)
 {
-  if (!self->priv->needs_save)
-    return;
-
-  self->priv->needs_save = FALSE;
   create_new_file (self, self->priv->basename);
 }
 
@@ -273,7 +266,6 @@ on_title_change                     (BijiOwnCloudNote *self)
   g_free (self->priv->basename);
   new_title = biji_note_id_get_title (self->priv->id);
   self->priv->basename = g_strdup_printf ("%s.txt", new_title);
-  self->priv->needs_save = TRUE;
 
 
   g_file_delete_async (self->priv->location,
@@ -293,15 +285,12 @@ biji_own_cloud_note_finalize (GObject *object)
 {
   BijiOwnCloudNote *self;
 
-
   g_return_if_fail (BIJI_IS_OWN_CLOUD_NOTE (object));
 
   self = BIJI_OWN_CLOUD_NOTE (object);
 
-  g_object_unref (self->priv->location);
-  g_object_unref (self->priv->timeout);
   g_object_unref (self->priv->cancellable);
-
+  g_object_unref (self->priv->timeout);
   G_OBJECT_CLASS (biji_own_cloud_note_parent_class)->finalize (object);
 }
 
@@ -321,7 +310,6 @@ biji_own_cloud_note_init (BijiOwnCloudNote *self)
   self->priv = G_TYPE_INSTANCE_GET_PRIVATE (self, BIJI_TYPE_OWN_CLOUD_NOTE, BijiOwnCloudNotePrivate);
   self->priv->cancellable = g_cancellable_new ();
   self->priv->id = NULL;
-  self->priv->needs_save = FALSE;
 
   self->priv->timeout = biji_timeout_new ();
   g_signal_connect_swapped (self->priv->timeout, "timeout",
@@ -352,7 +340,6 @@ ocloud_note_delete (BijiNoteObj *note)
   biji_note_delete_from_tracker (BIJI_NOTE_OBJ (self));
   return g_file_delete (self->priv->location, NULL, NULL);
 }
-
 
 static gchar *
 ocloud_note_get_basename (BijiNoteObj *note)
@@ -393,8 +380,7 @@ biji_own_cloud_note_class_init (BijiOwnCloudNoteClass *klass)
 
 BijiNoteObj        *biji_own_cloud_note_new_from_info           (BijiOwnCloudProvider *prov,
                                                                  BijiManager *manager,
-                                                                 BijiInfoSet *info,
-                                                                 gboolean online)
+                                                                 BijiInfoSet *info)
 {
   BijiNoteID *id;
   gchar *sane_title;
@@ -403,12 +389,9 @@ BijiNoteObj        *biji_own_cloud_note_new_from_info           (BijiOwnCloudPro
 
   /* First, sanitize the title, assuming no other thread
    * mess up with the InfoSet */
-  if (info->title != NULL)
-  {
-    sane_title = biji_str_replace (info->title, ".txt", "");
-    g_free (info->title);
-    info->title = sane_title;
-  }
+  sane_title = biji_str_replace (info->title, ".txt", "");
+  g_free (info->title);
+  info->title = sane_title;
 
 
   /* Hmm, even if the note starts blank we want some path...*/
@@ -443,11 +426,7 @@ BijiNoteObj        *biji_own_cloud_note_new_from_info           (BijiOwnCloudPro
                             G_CALLBACK (on_title_change), retval);
 
 
-  if (online)
-    ocloud->priv->location = g_file_new_for_commandline_arg (info->url);
-  else
-    ocloud->priv->location = g_file_new_for_path (info->url);
-
+  ocloud->priv->location = g_file_new_for_commandline_arg (info->url);
   ocloud->priv->basename = g_file_get_basename (ocloud->priv->location);
 
   return retval;

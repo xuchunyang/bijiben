@@ -54,8 +54,7 @@ GType              biji_own_cloud_note_get_type                (void);
 
 BijiNoteObj        *biji_own_cloud_note_new_from_info           (BijiOwnCloudProvider *prov,
                                                                  BijiManager *manager,
-                                                                 BijiInfoSet *info,
-                                                                 gboolean     online);
+                                                                 BijiInfoSet *info);
 
 G_END_DECLS
 
