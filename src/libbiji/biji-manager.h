@@ -90,6 +90,8 @@ void             biji_manager_add_e_source_extension_memo
 void             biji_manager_add_goa_object        (BijiManager *manager,
                                                      GoaObject *object);
 
+void             biji_manager_add_mail_goa_object        (BijiManager *manager,
+                                                          GoaObject *object);
 
 GList           *biji_manager_get_providers         (BijiManager *manager); /* <ProviderInfo*> */
 

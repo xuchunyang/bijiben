@@ -303,6 +303,23 @@ on_client_got (GObject *source_object,
     }
   }
 
+  /* FIXME Add all accounts that enable */
+  for (l=accounts; l!=NULL; l=l->next)
+  {
+    object = GOA_OBJECT (l->data);
+    account =  goa_object_get_account (object);
+
+    if (goa_object_peek_mail (object) ||
+        ! goa_account_get_mail_disabled (account))
+    {
+      biji_manager_add_mail_goa_object (self->priv->manager, object);
+    }
+    else
+    {
+      g_object_unref (object);
+    }
+  }
+
   g_list_free (accounts);
 }
 

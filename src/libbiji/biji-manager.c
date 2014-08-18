@@ -584,6 +584,33 @@ biji_manager_add_goa_object (BijiManager *self,
   _add_provider (self, provider);
 }
 
+void
+biji_manager_add_mail_goa_object (BijiManager *self,
+                                  GoaObject *object)
+{
+    GoaMail * goa_mail = NULL;
+    gchar *rtv = NULL;
+
+    goa_mail = goa_object_get_mail (object);
+    if (! goa_mail)
+      g_warning ("get goa_mail failed");
+
+    if (goa_mail_get_imap_supported (goa_mail))
+    {
+      rtv = goa_mail_dup_imap_host (goa_mail);
+      g_print ("imap address: %s\n", rtv);
+
+      rtv = goa_mail_dup_imap_user_name(goa_mail);
+      g_print ("imap user name: %s\n", rtv);
+    }
+
+    /* TODO Add provider */
+    g_message ("todo: %s , we will use it to active email supporting", __func__);
+
+    g_object_unref (goa_mail);
+    g_free (rtv);
+}
+
 
 static void
 biji_manager_constructed (GObject *object)
