@@ -59,7 +59,7 @@ load_from_location (BijiProviderHelper *helper)
   
   self = BIJI_MAIL_PROVIDER (helper->provider);
 
-  if (helper->group == BIJI_LIVING_ITEMS);
+  if (helper->group == BIJI_LIVING_ITEMS)
   {
     file = self->priv->location;
   }

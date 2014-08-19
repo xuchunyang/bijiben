@@ -51,7 +51,7 @@ mail_note_get_place (BijiItem *mail)
   g_return_val_if_fail (BIJI_IS_MAIL_NOTE (mail), NULL);
 
   self = BIJI_MAIL_NOTE (mail);
-  info = biji_provider_get_info (self->priv->prov);
+  info = biji_provider_get_info (BIJI_PROVIDER (self->priv->prov));
 
   return info->name;
 }
@@ -97,7 +97,7 @@ mail_note_save (BijiNoteObj *note)
   biji_lazy_serialize (note);
 
   /* Tracker */
-  prov_info = biji_provider_get_info (self->priv->prov);
+  prov_info = biji_provider_get_info (BIJI_PROVIDER (self->priv->prov));
   info = biji_info_set_new ();
 
   info->url = (gchar*) biji_item_get_uuid (item);
@@ -129,7 +129,7 @@ biji_mail_note_finalize (GObject *object)
 
   g_return_if_fail (BIJI_IS_MAIL_NOTE (object));
 
-  self = BIJI_NOTE_NOTE (object);
+  self = BIJI_MAIL_NOTE (object);
 
   g_free (self->priv->html);
 
@@ -194,40 +194,27 @@ biji_mail_note_class_init (BijiMailNoteClass *klass)
   g_type_class_add_private (klass, sizeof (BijiMailNotePrivate));
 }
 
-BijiNoteObj * biji_mail_note_new_from_info (BijiProvider *prov,
-                                            BijiManager *manager,
-                                            BijiInfoSet *info)
+BijiNoteObj *
+biji_mail_note_new_from_info (BijiProvider *provider,
+                              BijiManager *manager,
+                              BijiInfoSet *set)
 {
   BijiNoteID *id;
-  gchar *sane_title;
-  BijiNoteObj *retval;
-  BijiMailNote *mail_note;
+  BijiNoteObj *obj;
+  BijiMailNote *mail;
 
-  /* First, sanitize the title, assuming no other thread
-   * mess up with the InfoSet */
-  if (info->title != NULL)
-  {
-    sane_title = biji_str_replace (info->title, ".mail", "");
-    g_free (info->title);
-    info->title = sane_title;
-  }
+  id = biji_note_id_new_from_info (set);
 
+  obj = g_object_new (BIJI_TYPE_MAIL_NOTE,
+                      "manager", manager,
+                      "id", id,
+                      NULL);
 
-  /* Now actually create the stuff */
+  mail = BIJI_MAIL_NOTE (obj);
 
-  id = biji_note_id_new_from_info (info);
+  mail->priv->location = g_file_new_for_commandline_arg (set->url);
+  mail->priv->basename = g_file_get_basename (mail->priv->location);
+  mail->priv->prov = provider;
 
-  retval = g_object_new (BIJI_TYPE_MAIL_NOTE,
-                         "manager", manager,
-                         "id", id,
-                         NULL);
-
-  mail_note = BIJI_MAIL_NOTE (retval);
-  mail_note->priv->id = id;
-  mail_note->priv->prov = prov;
-  biji_note_obj_set_create_date (retval, info->created);
-  mail_note->priv->basename = g_file_get_basename (mail_note->priv->location);
-
-  return retval;
-
+  return obj;
 }

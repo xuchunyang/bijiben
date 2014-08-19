@@ -18,7 +18,7 @@
 
 
 #ifndef _BIJI_MAIL_NOTE_H_
-#define _BIJI_MAIL_NOTE_H_
+#define _BIJI_MAIL_NOTE_H_ 1
 
 #include "biji-note-id.h"
 #include "biji-note-obj.h"
